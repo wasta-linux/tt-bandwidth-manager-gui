@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess
 import time
 
@@ -53,18 +54,23 @@ class TrafficCop(Gtk.Application):
         # Define builder and its widgets.
         Gtk.Application.do_startup(self)
 
-        # Get widgets from glade file. (defined in __init__)
+        # Get widgets from glade file, which is defined in __init__.
         self.builder = Gtk.Builder()
         self.builder.add_from_file(self.ui_dir + '/mainwindow.glade')
+        self.window = self.builder.get_object('mainwindow')
         self.toggle_active = self.builder.get_object('toggle_active')
         self.toggle_unit_state = self.builder.get_object('toggle_unit_state')
         self.button_restart = self.builder.get_object('button_restart')
+        self.label_iface = self.builder.get_object('label_iface')
         self.button_log = self.builder.get_object('button_log')
-        self.button_reset = self.builder.get_object('button_reset')
+        self.label_applied = self.builder.get_object('label_applied')
+        self.button_applied = self.builder.get_object('button_applied')
         self.button_config = self.builder.get_object('button_config')
+        self.button_reset = self.builder.get_object('button_reset')
+
 
         # Get the time when the service was last started.
-        self.update_service_props()
+        #self.update_service_props()
 
     def do_activate(self):
         # Verify execution with elevated privileges.
@@ -72,10 +78,12 @@ class TrafficCop(Gtk.Application):
         #    bin = '/usr/bin/wasta-bandwidth-manager'
         #    print("wasta-bandwidth-manager needs elevated privileges; e.g.:\n\n$ pkexec", bin, "\n$ sudo", bin)
         #    exit(1)
-        self.update_state_toggles()
+        self.update_service_props()
 
-        # Get name of managed interface.
+        # Populate widget data.
+        self.update_state_toggles()
         self.update_device_name()
+        self.update_config_time()
 
         '''
         cmd = [
@@ -98,7 +106,6 @@ class TrafficCop(Gtk.Application):
                 pass
         '''
         # Define window and make runtime adjustments.
-        self.window = self.builder.get_object('mainwindow')
         #self.window.set_icon_name('traffic-cop')
         self.add_window(self.window)
         self.window.show()
@@ -142,8 +149,7 @@ class TrafficCop(Gtk.Application):
         toggle_active = self.builder.get_object('toggle_active')
         upat = '^UnitFileState=.*$'
         apat = '^ActiveState=.*$'
-        #epat = '^ConditionTimestampMonotonic=.*$' # NOT epoch seconds!
-        fpat = '^ExecMainStartTimestamp=.*$'
+        tpat = '^ExecMainStartTimestamp=.*$'
         for line in output_list:
             try:
                 match = re.match(upat, line)
@@ -158,15 +164,13 @@ class TrafficCop(Gtk.Application):
             except:
                 pass
             try:
-                match = re.match(fpat, line)
+                match = re.match(tpat, line)
                 self.svc_start_time = match.group().split('=')[1]
                 continue
             except:
                 pass
 
     def update_state_toggles(self):
-        self.update_service_props()
-
         # Update toggle buttons according to current states.
         state = True if self.unit_file_state == 'enabled' else False
         self.toggle_unit_state.set_state(state)
@@ -183,23 +187,119 @@ class TrafficCop(Gtk.Application):
         ]
         status_output = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output_list = status_output.stdout.decode().splitlines()
-        label_iface = self.builder.get_object('label_iface')
         for line in output_list:
             pat = '.*\s\/usr\/bin\/tt\s.*'
             try:
                 match = re.match(pat, line)
                 iface = match.group().split()[-2]
-                label_iface.set_text(iface)
+                self.label_iface.set_text(iface)
                 return
             except:
                 pass
-        label_iface.set_text("--")
+        self.label_iface.set_text("--")
+
+    def update_config_time(self):
+        self.label_applied.set_text(self.svc_start_time)
+
+    def update_info_widgets(self):
+        self.update_service_props()
+        self.update_state_toggles()
+        self.update_device_name()
+        self.update_config_time()
 
     def wait_for_tt_start(self):
         # Wait for a few seconds to give service status time to start.
         # TODO: Is there a better way to verify that tt has started?
         #   if [[ ping -c3 google.com ]]; then wait for tt; else return; fi
         time.sleep(3)
+
+    def stop_service(self):
+        cmd = ["systemctl", "stop", "tt-bandwidth-manager.service"]
+        subprocess.run(cmd)
+        self.update_info_widgets()
+
+    def start_service(self):
+        cmd = ["systemctl", "start", "tt-bandwidth-manager.service"]
+        subprocess.run(cmd)
+        self.wait_for_tt_start()
+        self.update_info_widgets()
+
+    def restart_service(self):
+        cmd = ["systemctl", "restart", "tt-bandwidth-manager.service"]
+        subprocess.run(cmd)
+        self.wait_for_tt_start()
+        # Check service status and update widgets.
+        self.update_info_widgets()
+
+    def get_user_confirmation(self):
+        text = "The current configuration file will be backed up first."
+        label = Gtk.Label(text)
+        dialog = Gtk.Dialog(
+            'Reset to default configuration?',
+            self.window,
+            None, #Gtk.Dialog.DESTROY_WITH_PARENT,
+            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        )
+        sides = 80
+        dialog.vbox.set_margin_top(20)
+        dialog.vbox.set_margin_start(sides)
+        dialog.vbox.set_margin_end(sides)
+        dialog.vbox.set_spacing(20)
+        dialog.vbox.pack_start(label, True, True, 5)
+        label.show()
+        response = dialog.run()
+        # CLOSE: -4, OK: -5, CANCEL: -6
+        dialog.destroy()
+        if response == -5:
+            return True
+        else:
+            return False
+
+    def check_diff(self, file1, file2):
+        result = subprocess.run(
+            ["diff", file1, file2],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        return result.returncode
+
+    def ensure_config_backup(self, current, default):
+        # Make a backup of user config; add index to file name if other backup already exists.
+        already = "Current config already backed up at"
+        name = current.stem
+        suffix = ".yaml.bak"
+        backup = current.with_suffix(suffix)
+        if not backup.exists():
+            shutil.copyfile(current, backup)
+            return
+        diff = self.check_diff(current, backup)
+        if diff == 0:
+            print(already, backup)
+            return
+        # The backup file exists and is different from current config:
+        #   need to choose new backup file name and check again.
+        # Add index to name.
+        i = 1
+        # Set new backup file name.
+        backup = current.with_name(name + '-' + str(i)).with_suffix(suffix)
+        if not backup.exists():
+            shutil.copyfile(current, backup)
+            return
+        diff = self.check_diff(current, backup)
+        if diff == 0:
+            print(already, backup)
+            return
+        while backup.exists():
+            # Keep trying new indices until an available one is found.
+            i += 1
+            backup = current.with_name(name + '-' + str(i)).with_suffix(suffix)
+            if not backup.exists():
+                shutil.copyfile(current, backup)
+                return
+            diff = self.check_diff(current, backup)
+            if diff == 0:
+                print(already, backup)
+                return
 
 
 app = TrafficCop()

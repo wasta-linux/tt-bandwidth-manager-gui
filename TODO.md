@@ -6,8 +6,8 @@
 - [x] Button for restart
 - [x] Button to view log
 - [x] Button to open config file
-- [ ] Button to apply updated config
-- [ ] Button to reset config
+- [x] Button to apply updated config
+- [x] Button to reset config
 
 ### Packaging needs
 - [ ] Properly create setup.py
