@@ -12,12 +12,15 @@ bin_parent_dir = bin_path.parents[1]
 if bin_parent_dir.stem != 'usr':
     # If bin_dir's parent folder is not "/usr", then use uninstalled location.
     modules_dir = str(bin_parent_dir)
+    sys.path.append(modules_dir)
     runmode = 'uninstalled'
 else:
-    modules_dir = '/usr/share/trafficcop'
+    # Using setuptools will install the module to /usr/lib/python3/dist-packages/,
+    #   which is already in the python path.
+    #modules_dir = '/usr/share/trafficcop'
     runmode = 'installed'
 
-sys.path.append(modules_dir)
+#sys.path.append(modules_dir)
 from trafficcop import app
 
 if __name__ == '__main__':
