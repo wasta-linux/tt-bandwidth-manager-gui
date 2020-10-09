@@ -1,6 +1,5 @@
 ### Planned features
-- [x] Show managed interface name
-  - [x] Refresh name when service is (re)started
+- [x] Show managed interface name; refresh name when service is (re)started
 - [x] Toggle button for enable/disable
 - [x] Toggle button for start/stop
 - [x] Button for restart
@@ -10,10 +9,10 @@
 - [x] Button to reset config
 
 ### Packaging needs
-- [ ] Properly create setup.py
+- [x] Properly create setup.py
 - [x] add gnome-terminal dependency
 - [x] Create debian package folder.
-- [ ] Use debian/changelog to provide version number
+- [x] Use debian/changelog to provide version number
 
 ### Feature wishlist
 - Set config in app window instead of text file.

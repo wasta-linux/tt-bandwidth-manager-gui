@@ -1,9 +1,9 @@
 """ Main GUI module. """
 
 import gi
-import json
 import logging
 import os
+import psutil
 import re
 import shutil
 import subprocess
@@ -43,12 +43,13 @@ class TrafficCop(Gtk.Application):
         )
         '''
         # Get UI location based on current file location.
-        self.ui_dir = '/usr/share/wasta-bandwidth-manager/ui'
-        if str(current_file_path.parents[1]) != '/usr/share/wasta-bandwidth-manager':
+        self.ui_dir = '/usr/share/traffic-cop/ui'
+        if str(current_file_path.parents[1]) != '/usr/lib/python3/dist-packages':
             self.ui_dir = str(current_file_path.parents[1] / 'data' / 'ui')
 
         # Define app-wide variables.
         self.runmode = ''
+        self.tt_pid = self.get_tt_pid()
 
     def do_startup(self):
         # Define builder and its widgets.
@@ -179,24 +180,11 @@ class TrafficCop(Gtk.Application):
 
     def update_device_name(self):
         # Get name of managed interface.
-        cmd = [
-            "systemctl",
-            "status",
-            "tt-bandwidth-manager.service",
-            "--no-pager",
-        ]
-        status_output = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output_list = status_output.stdout.decode().splitlines()
-        for line in output_list:
-            pat = '.*\s\/usr\/bin\/tt\s.*'
-            try:
-                match = re.match(pat, line)
-                iface = match.group().split()[-2]
-                self.label_iface.set_text(iface)
-                return
-            except:
-                pass
         self.label_iface.set_text("--")
+        if psutil.pid_exists(self.tt_pid):
+            proc = psutil.Process(pid)
+            iface = proc.cmdline()[2]
+            self.label_iface.set_text(iface)
 
     def update_config_time(self):
         self.label_applied.set_text(self.svc_start_time)
@@ -207,11 +195,28 @@ class TrafficCop(Gtk.Application):
         self.update_device_name()
         self.update_config_time()
 
+    def get_tt_pid(self):
+        exe = '/usr/bin/tt'
+        procs = psutil.process_iter()
+        for proc in procs:
+            try:
+                if exe in proc.cmdline():
+                    return proc.pid
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+        return -1
+
     def wait_for_tt_start(self):
-        # Wait for a few seconds to give service status time to start.
-        # TODO: Is there a better way to verify that tt has started?
-        #   if [[ ping -c3 google.com ]]; then wait for tt; else return; fi
-        time.sleep(3)
+        # Wait for service status to start, otherwise update_service_props()
+        #   may not get the correct info.
+        ct = 0
+        while ct < 100:
+            self.tt_pid = self.get_tt_pid()
+            if psutil.pid_exists(self.tt_pid):
+                return
+            time.sleep(0.1)
+            ct += 1
+        return
 
     def stop_service(self):
         cmd = ["systemctl", "stop", "tt-bandwidth-manager.service"]
@@ -240,10 +245,12 @@ class TrafficCop(Gtk.Application):
             None, #Gtk.Dialog.DESTROY_WITH_PARENT,
             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK)
         )
-        sides = 80
-        dialog.vbox.set_margin_top(20)
-        dialog.vbox.set_margin_start(sides)
-        dialog.vbox.set_margin_end(sides)
+        hmarg = 80
+        vmarg = 20
+        dialog.vbox.set_margin_top(vmarg)
+        dialog.vbox.set_margin_bottom(vmarg)
+        dialog.vbox.set_margin_start(hmarg)
+        dialog.vbox.set_margin_end(hmarg)
         dialog.vbox.set_spacing(20)
         dialog.vbox.pack_start(label, True, True, 5)
         label.show()
