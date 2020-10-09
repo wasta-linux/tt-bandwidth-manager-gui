@@ -2,10 +2,18 @@
 
 import glob
 from distutils.core import setup
+from pathlib import Path
+
+# Get version number from debian/changelog.
+changelog = Path(__file__).parents[0] / 'debian' / 'changelog'
+with open(changelog) as f:
+    first_line = f.readline()
+# 2nd term in 1st line; need to remove parentheses.
+version = first_line.split()[1][1:-1]
 
 setup(
     name='Traffic Cop',
-    version='0.1.0',
+    version=version,
     description="Manage bandwidth usage by app or process.",
     author="Nate Marti",
     author_email="nate_marti@sil.org",

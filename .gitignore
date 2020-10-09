@@ -6,6 +6,9 @@ __pycache__/
 # Backup files
 *~
 
+# Testing file
+tests/testing.py
+
 # C extensions
 *.so
 
