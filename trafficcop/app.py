@@ -1,6 +1,7 @@
 """ Main GUI module. """
 
 import gi
+import gzip
 import logging
 import os
 import psutil
@@ -30,25 +31,15 @@ class TrafficCop(Gtk.Application):
         # Add CLI options.
         self.add_main_option(
             'version', ord('V'), GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
-            'Print version number.', None
+            'Print version number', None
         )
-        '''
-        self.add_main_option(
-            'snaps-dir', ord('s'), GLib.OptionFlags.NONE, GLib.OptionArg.STRING,
-            'Update snaps from offline folder.', '/path/to/wasta-offline'
-        )
-        self.add_main_option(
-            'online', ord('i'), GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
-            'Update snaps from the online Snap Store.', None
-        )
-        '''
+
         # Get UI location based on current file location.
         self.ui_dir = '/usr/share/traffic-cop/ui'
         if str(current_file_path.parents[1]) != '/usr/lib/python3/dist-packages':
             self.ui_dir = str(current_file_path.parents[1] / 'data' / 'ui')
 
         # Define app-wide variables.
-        self.runmode = ''
         self.tt_pid = self.get_tt_pid()
 
     def do_startup(self):
@@ -69,16 +60,13 @@ class TrafficCop(Gtk.Application):
         self.button_config = self.builder.get_object('button_config')
         self.button_reset = self.builder.get_object('button_reset')
 
-
-        # Get the time when the service was last started.
-        #self.update_service_props()
-
     def do_activate(self):
         # Verify execution with elevated privileges.
-        #if os.geteuid() != 0:
-        #    bin = '/usr/bin/wasta-bandwidth-manager'
-        #    print("wasta-bandwidth-manager needs elevated privileges; e.g.:\n\n$ pkexec", bin, "\n$ sudo", bin)
-        #    exit(1)
+        if os.geteuid() != 0:
+            bin = '/usr/bin/traffic-cop'
+            print("\ntraffic-cop needs elevated privileges; e.g.:\n\n$ pkexec", bin, "\n$ sudo", bin)
+            exit(1)
+
         self.update_service_props()
 
         # Populate widget data.
@@ -86,28 +74,8 @@ class TrafficCop(Gtk.Application):
         self.update_device_name()
         self.update_config_time()
 
-        '''
-        cmd = [
-            "systemctl",
-            "status",
-            "tt-bandwidth-manager.service",
-            "--no-pager",
-        ]
-        status_output = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output_list = status_output.stdout.decode().splitlines()
-        label_iface = self.builder.get_object('label_iface')
-        for line in output_list:
-            pat = '.*\s\/usr\/bin\/tt\s.*'
-            try:
-                match = re.match(pat, line)
-                iface = match.group().split()[3]
-                label_iface.set_text(iface)
-                break
-            except:
-                pass
-        '''
         # Define window and make runtime adjustments.
-        #self.window.set_icon_name('traffic-cop')
+        self.window.set_icon_name('traffic-cop')
         self.add_window(self.window)
         self.window.show()
 
@@ -124,15 +92,25 @@ class TrafficCop(Gtk.Application):
             return 0
 
         if 'version' in options:
-            # TODO: print version number from changelog instead of using apt-cache.
-            proc = subprocess.run(['apt-cache', 'policy', 'tt-bandwidth-manager'])
-            print(proc.stdout.decode())
+            # Get version number from debian/changelog.
+            if self.runmode == 'uninstalled':
+                changelog = Path(__file__).parents[1] / 'debian' / 'changelog'
+                with open(changelog) as f:
+                    first_line = f.readline()
+            else:
+                changelog = Path('/usr/share/doc/tt-bandwidth-manager-gui/changelog.gz')
+                with gzip.open(changelog) as f:
+                    first_line = f.readline().strip().decode()
+            # 2nd term in 1st line of changelog; also need to remove parentheses.
+            version = first_line.split()[1][1:-1]
+            print("\ntt-bandwidth-manager-gui", version)
             return 0
 
         # Verify execution with elevated privileges.
-        #if os.geteuid() != 0:
-        #    print("wasta-bandwidth-manager needs elevated privileges; e.g.:\n\n$ pkexec", __file__, "\n$ sudo", __file__)
-        #    exit(1)
+        if os.geteuid() != 0:
+            bin = '/usr/bin/traffic-cop'
+            print("\ntraffic-cop needs elevated privileges; e.g.:\n\n$ pkexec", bin, "\n$ sudo", bin)
+            exit(1)
 
     def update_service_props(self):
         # Get state of systemd service.
