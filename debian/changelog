@@ -1,3 +1,9 @@
+tt-bandwidth-manager-gui (0.1.1) focal; urgency=medium
+
+  * Ensure elevated privileges from CLI.
+
+ -- Nate Marti <nate_marti@sil.org>  Fri, 09 Oct 2020 17:40:36 +0100
+
 tt-bandwidth-manager-gui (0.1) focal; urgency=medium
 
   * Initial release.
