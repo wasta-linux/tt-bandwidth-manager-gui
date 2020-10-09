@@ -182,7 +182,7 @@ class TrafficCop(Gtk.Application):
         # Get name of managed interface.
         self.label_iface.set_text("--")
         if psutil.pid_exists(self.tt_pid):
-            proc = psutil.Process(pid)
+            proc = psutil.Process(self.tt_pid)
             iface = proc.cmdline()[2]
             self.label_iface.set_text(iface)
 
