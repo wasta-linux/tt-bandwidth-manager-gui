@@ -11,8 +11,8 @@
 
 ### Packaging needs
 - [ ] Properly create setup.py
-- [ ] add gnome-terminal dependency
-- [ ] Create debian package folder.
+- [x] add gnome-terminal dependency
+- [x] Create debian package folder.
 - [ ] Use debian/changelog to provide version number
 
 ### Feature wishlist
