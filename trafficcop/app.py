@@ -19,6 +19,7 @@ from gi.repository import GLib
 from gi.repository import Gtk
 
 from trafficcop import handler
+from trafficcop import utils
 
 
 class TrafficCop(Gtk.Application):
@@ -40,7 +41,7 @@ class TrafficCop(Gtk.Application):
             self.ui_dir = str(current_file_path.parents[1] / 'data' / 'ui')
 
         # Define app-wide variables.
-        self.tt_pid = self.get_tt_pid()
+        self.tt_pid = utils.get_tt_pid()
 
     def do_startup(self):
         # Define builder and its widgets.
@@ -59,6 +60,7 @@ class TrafficCop(Gtk.Application):
         self.button_applied = self.builder.get_object('button_applied')
         self.button_config = self.builder.get_object('button_config')
         self.button_reset = self.builder.get_object('button_reset')
+        self.vp_config = self.builder.get_object('vp_config')
 
     def do_activate(self):
         # Verify execution with elevated privileges.
@@ -173,29 +175,6 @@ class TrafficCop(Gtk.Application):
         self.update_device_name()
         self.update_config_time()
 
-    def get_tt_pid(self):
-        exe = '/usr/bin/tt'
-        procs = psutil.process_iter()
-        for proc in procs:
-            try:
-                if exe in proc.cmdline():
-                    return proc.pid
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                pass
-        return -1
-
-    def wait_for_tt_start(self):
-        # Wait for service status to start, otherwise update_service_props()
-        #   may not get the correct info.
-        ct = 0
-        while ct < 100:
-            self.tt_pid = self.get_tt_pid()
-            if psutil.pid_exists(self.tt_pid):
-                return
-            time.sleep(0.1)
-            ct += 1
-        return
-
     def stop_service(self):
         cmd = ["systemctl", "stop", "tt-bandwidth-manager.service"]
         subprocess.run(cmd)
@@ -204,13 +183,13 @@ class TrafficCop(Gtk.Application):
     def start_service(self):
         cmd = ["systemctl", "start", "tt-bandwidth-manager.service"]
         subprocess.run(cmd)
-        self.wait_for_tt_start()
+        self.tt_pid = utils.wait_for_tt_start()
         self.update_info_widgets()
 
     def restart_service(self):
         cmd = ["systemctl", "restart", "tt-bandwidth-manager.service"]
         subprocess.run(cmd)
-        self.wait_for_tt_start()
+        self.tt_pid = utils.wait_for_tt_start()
         # Check service status and update widgets.
         self.update_info_widgets()
 
@@ -239,52 +218,6 @@ class TrafficCop(Gtk.Application):
             return True
         else:
             return False
-
-    def check_diff(self, file1, file2):
-        result = subprocess.run(
-            ["diff", file1, file2],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-        return result.returncode
-
-    def ensure_config_backup(self, current, default):
-        # Make a backup of user config; add index to file name if other backup already exists.
-        already = "Current config already backed up at"
-        name = current.stem
-        suffix = ".yaml.bak"
-        backup = current.with_suffix(suffix)
-        if not backup.exists():
-            shutil.copyfile(current, backup)
-            return
-        diff = self.check_diff(current, backup)
-        if diff == 0:
-            print(already, backup)
-            return
-        # The backup file exists and is different from current config:
-        #   need to choose new backup file name and check again.
-        # Add index to name.
-        i = 1
-        # Set new backup file name.
-        backup = current.with_name(name + '-' + str(i)).with_suffix(suffix)
-        if not backup.exists():
-            shutil.copyfile(current, backup)
-            return
-        diff = self.check_diff(current, backup)
-        if diff == 0:
-            print(already, backup)
-            return
-        while backup.exists():
-            # Keep trying new indices until an available one is found.
-            i += 1
-            backup = current.with_name(name + '-' + str(i)).with_suffix(suffix)
-            if not backup.exists():
-                shutil.copyfile(current, backup)
-                return
-            diff = self.check_diff(current, backup)
-            if diff == 0:
-                print(already, backup)
-                return
 
 
 app = TrafficCop()

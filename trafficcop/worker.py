@@ -3,7 +3,6 @@
 
 #import gi
 import subprocess
-#import time
 
 #from gi.repository import Gdk, GLib, Gtk
 #gi.require_version("Gtk", "3.0")

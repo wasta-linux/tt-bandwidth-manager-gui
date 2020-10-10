@@ -6,6 +6,7 @@ import threading
 from pathlib import Path
 
 from trafficcop import app
+from trafficcop import utils
 from trafficcop import worker
 
 
@@ -63,14 +64,14 @@ class Handler():
             return
 
         # First check if current config matches default config.
-        diff = app.app.check_diff(current, default)
+        diff = utils.check_diff(current, default)
         if diff == 0:
             # Already using the default config.
             print("Already using default config.")
             return
 
         # Ensure that backup is made of current config.
-        app.app.ensure_config_backup(current, default)
+        utils.ensure_config_backup(current, default)
 
         # Copy /usr/share/tt-bandwidth-manager/tt-default-config.yaml to /etc/tt-config.yaml;
         #   overwrite existing file.
