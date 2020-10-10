@@ -4,7 +4,7 @@
  "http://www.freedesktop.org/software/polkit/policyconfig-1.dtd">
 <policyconfig>
 
-  <action id="org.wasta.apps.traffic-cop">
+  <action id="org.wasta.apps.test-traffic-cop">
     <description>Manage bandwidth usage by app or process.</description>
     <message>Authentication is required to TEST Traffic Cop</message>
     <vendor>Wasta-Linux</vendor>
