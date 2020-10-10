@@ -12,6 +12,7 @@ from gi.repository import Gtk
 from pathlib import Path
 
 from trafficcop import app
+from trafficcop import utils
 
 # Assert*() methods here:
 # https://docs.python.org/3/library/unittest.html?highlight=pytest#unittest.TestCase
@@ -19,6 +20,12 @@ from trafficcop import app
 class All(unittest.TestCase):
     def setUp(self):
         pass
+
+    def test_check_diff(self):
+        example = '/usr/share/tt-bandwidth-manager/tt-example.yaml'
+        default = '/usr/share/traffic-cop/tt-default-config.yaml'
+        diff = utils.check_diff(example, default)
+        self.assertNotEqual(diff, 0)
 
     def test_INCOMPLETE_restart_service(self):
         pass
