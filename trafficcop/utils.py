@@ -1,7 +1,16 @@
+import contextlib
+import os
 import psutil
 import shutil
 import subprocess
 import time
+
+
+def mute(func, *args, **kwargs):
+    with open(os.devnull, 'w') as devnull:
+        with contextlib.redirect_stdout(devnull):
+            output = func(*args, **kwargs)
+    return output
 
 def get_tt_pid():
     exe = '/usr/bin/tt'
@@ -34,7 +43,7 @@ def check_diff(file1, file2):
     )
     return result.returncode
 
-def ensure_config_backup(current, default):
+def ensure_config_backup(current):
     # Make a backup of user config; add index to file name if other backup already exists.
     already = "Current config already backed up at"
     name = current.stem
@@ -42,11 +51,11 @@ def ensure_config_backup(current, default):
     backup = current.with_suffix(suffix)
     if not backup.exists():
         shutil.copyfile(current, backup)
-        return
+        return True
     diff = check_diff(current, backup)
     if diff == 0:
         print(already, backup)
-        return
+        return True
     # The backup file exists and is different from current config:
     #   need to choose new backup file name and check again.
     # Add index to name.
@@ -55,19 +64,19 @@ def ensure_config_backup(current, default):
     backup = current.with_name(name + '-' + str(i)).with_suffix(suffix)
     if not backup.exists():
         shutil.copyfile(current, backup)
-        return
+        return True
     diff = check_diff(current, backup)
     if diff == 0:
         print(already, backup)
-        return
+        return True
     while backup.exists():
         # Keep trying new indices until an available one is found.
         i += 1
         backup = current.with_name(name + '-' + str(i)).with_suffix(suffix)
         if not backup.exists():
             shutil.copyfile(current, backup)
-            return
+            return True
         diff = check_diff(current, backup)
         if diff == 0:
             print(already, backup)
-            return
+            return True
