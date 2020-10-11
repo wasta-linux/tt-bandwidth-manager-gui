@@ -71,7 +71,7 @@ class Handler():
             return
 
         # Ensure that backup is made of current config.
-        utils.ensure_config_backup(current, default)
+        utils.ensure_config_backup(current)
 
         # Copy /usr/share/tt-bandwidth-manager/tt-default-config.yaml to /etc/tt-config.yaml;
         #   overwrite existing file.

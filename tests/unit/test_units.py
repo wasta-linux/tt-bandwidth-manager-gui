@@ -1,13 +1,8 @@
-import gi
-import os
-import re
-import shutil
-import subprocess
-import time
+#import gi
 import unittest
 
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+#gi.require_version("Gtk", "3.0")
+#from gi.repository import Gtk
 
 from pathlib import Path
 
@@ -26,6 +21,17 @@ class All(unittest.TestCase):
         default = '/usr/share/traffic-cop/tt-default-config.yaml'
         diff = utils.check_diff(example, default)
         self.assertNotEqual(diff, 0)
+
+    def test_ensure_config_backup(self):
+        # This only tests that tests/data/tt-config.yaml == tests/data/tt-config.yaml.bak.
+        #   It doesn't test the creation of a properly-named new backup file.
+        tests_dir = Path(__file__).parents[1]
+        current = tests_dir / 'data' / 'tt-config.yaml'
+        result = utils.mute(
+            utils.ensure_config_backup,
+            current
+        )
+        self.assertTrue(result)
 
     def test_INCOMPLETE_restart_service(self):
         pass
