@@ -51,6 +51,8 @@ class Handler():
         t_restart.start()
 
     def on_button_apply_clicked(self, button):
+        # Update the config file variable.
+        app.app.config_file = Path('/etc/tt-config.yaml')
         # Restart the service to apply updated configuration.
         app.app.restart_service()
 

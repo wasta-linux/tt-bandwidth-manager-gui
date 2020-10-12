@@ -18,6 +18,7 @@ from gi.repository import Gio
 from gi.repository import GLib
 from gi.repository import Gtk
 
+from trafficcop import config
 from trafficcop import handler
 from trafficcop import utils
 
@@ -42,6 +43,8 @@ class TrafficCop(Gtk.Application):
 
         # Define app-wide variables.
         self.tt_pid = utils.get_tt_pid()
+        self.config_file = Path('/etc/tt-config.yaml')
+        self.config_store = ''
 
     def do_startup(self):
         # Define builder and its widgets.
@@ -60,6 +63,7 @@ class TrafficCop(Gtk.Application):
         self.button_applied = self.builder.get_object('button_applied')
         self.button_config = self.builder.get_object('button_config')
         self.button_reset = self.builder.get_object('button_reset')
+        self.w_config = self.builder.get_object('w_config')
         self.vp_config = self.builder.get_object('vp_config')
 
     def do_activate(self):
@@ -76,10 +80,16 @@ class TrafficCop(Gtk.Application):
         self.update_device_name()
         self.update_config_time()
 
-        # Define window and make runtime adjustments.
-        self.window.set_icon_name('traffic-cop')
+        # Configure and show window.
         self.add_window(self.window)
+        self.window.set_icon_name('traffic-cop')
         self.window.show()
+
+        # Populate config viewport.
+        self.tv_config = self.update_config_treeview()
+        self.tv_config.show()
+        self.vp_config.add(self.tv_config)
+
 
         # Connect GUI signals to Handler class.
         self.builder.connect_signals(handler.Handler())
@@ -169,11 +179,23 @@ class TrafficCop(Gtk.Application):
     def update_config_time(self):
         self.label_applied.set_text(self.svc_start_time)
 
+    def update_config_treeview(self):
+        config_dict = config.decode_yaml(self.config_file)
+        if self.config_store:
+            # Update store.
+            self.config_store = config.update_config_tree_store(self.config_store, config_dict)
+        else:
+            # Define store.
+            self.config_store = config.config_tree_store(config_dict)
+        self.tv_config = config.config_tree_view(self.config_store)
+        return self.tv_config
+
     def update_info_widgets(self):
         self.update_service_props()
         self.update_state_toggles()
         self.update_device_name()
         self.update_config_time()
+        self.update_config_treeview()
 
     def stop_service(self):
         cmd = ["systemctl", "stop", "tt-bandwidth-manager.service"]
