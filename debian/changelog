@@ -1,3 +1,9 @@
+tt-bandwidth-manager-gui (0.2.0) focal; urgency=medium
+
+  * Added config display.
+
+ -- Nate Marti <nate_marti@sil.org>  Tue, 13 Oct 2020 07:46:00 +0100
+
 tt-bandwidth-manager-gui (0.1.1) focal; urgency=medium
 
   * Ensure elevated privileges from CLI.
