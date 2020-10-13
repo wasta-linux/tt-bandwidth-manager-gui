@@ -23,6 +23,7 @@ def handle_button_log_clicked():
         "--output=cat",
         "--no-pager",
         "--since=\'" + app.app.svc_start_time + "\'",
+        #"--since=\'" + app.app.tt_start + "\'", # this doesn't work
     ]
     cmd_txt = " ".join(cmd)
     subprocess.run(cmd_txt, shell=True)
@@ -37,11 +38,7 @@ def handle_button_config_clicked():
     return
 
 def handle_config_changed():
-    config_file = Path("/etc/tt-config.yaml")
-    mod_time_epoch = config_file.stat().st_mtime
-    #mod_time_obj = time.localtime(mod_time_epoch)
-    #mod_time = time.strftime("%a %Y-%m-%d %H:%M:%S %Z", mod_time_obj)
-    app.app.update_service_props()
-    read_time = app.app.svc_start_time
-    print("Service Start Time =", read_time)
-    print("Config file mod. time =", mod_time_epoch)
+    pass
+    #app.app.update_service_props()
+    #read_time = app.app.tt_start
+    #print("Service Start Time =", read_time)

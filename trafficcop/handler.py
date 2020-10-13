@@ -46,9 +46,9 @@ class Handler():
         t_config = threading.Thread(target=target)
         t_config.start()
 
-        target = worker.handle_config_changed
-        t_restart = threading.Thread(target=target)
-        t_restart.start()
+        #target = worker.handle_config_changed
+        #t_restart = threading.Thread(target=target)
+        #t_restart.start()
 
     def on_button_apply_clicked(self, button):
         # Update the config file variable.
