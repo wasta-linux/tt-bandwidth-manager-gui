@@ -12,28 +12,38 @@ def mute(func, *args, **kwargs):
             output = func(*args, **kwargs)
     return output
 
-def get_tt_pid():
+def convert_epoch_to_human(epoch):
+    human = time.ctime(epoch)
+    return human
+
+def get_tt_info():
     exe = '/usr/bin/tt'
     procs = psutil.process_iter()
     for proc in procs:
         try:
             if exe in proc.cmdline():
-                return proc.pid
+                proc.start = convert_epoch_to_human(proc.create_time())
+                return proc.pid, proc.start
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
-    return -1
+    return -1, -1
+
+def get_file_mtime(file):
+    statinfo = os.stat(file)
+    mtime = convert_epoch_to_human(statinfo.st_mtime)
+    return mtime
 
 def wait_for_tt_start():
     # Wait for service status to start, otherwise update_service_props()
     #   may not get the correct info.
     ct = 0
     while ct < 100:
-        tt_pid = get_tt_pid()
+        tt_pid, tt_start = get_tt_info()
         if psutil.pid_exists(tt_pid):
-            return tt_pid
+            return tt_pid, tt_start
         time.sleep(0.1)
         ct += 1
-    return tt_pid
+    return tt_pid, tt_start
 
 def check_diff(file1, file2):
     result = subprocess.run(

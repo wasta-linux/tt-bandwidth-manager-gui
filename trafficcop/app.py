@@ -42,7 +42,7 @@ class TrafficCop(Gtk.Application):
             self.ui_dir = str(current_file_path.parents[1] / 'data' / 'ui')
 
         # Define app-wide variables.
-        self.tt_pid = utils.get_tt_pid()
+        self.tt_pid, self.tt_start = utils.get_tt_info()
         self.config_file = Path('/etc/tt-config.yaml')
         self.config_store = ''
 
@@ -86,9 +86,9 @@ class TrafficCop(Gtk.Application):
         self.window.show()
 
         # Populate config viewport.
-        self.tv_config = self.update_config_treeview()
-        self.tv_config.show()
-        self.vp_config.add(self.tv_config)
+        self.treeview_config = self.update_treeview_config()
+        self.treeview_config.show()
+        self.vp_config.add(self.treeview_config)
 
 
         # Connect GUI signals to Handler class.
@@ -125,6 +125,9 @@ class TrafficCop(Gtk.Application):
             exit(1)
 
     def update_service_props(self):
+        # Get true service start time.
+        self.tt_pid, self.tt_start = utils.get_tt_info()
+
         # Get state of systemd service.
         cmd = [
             "systemctl",
@@ -156,6 +159,8 @@ class TrafficCop(Gtk.Application):
                 pass
             try:
                 match = re.match(tpat, line)
+                # The format for self.tt_start (Tue Oct 13 06:15:14 2020) isn't
+                #   compatible with the log file viewer. (Tue 2020-10-13 05:59:00 WAT)
                 self.svc_start_time = match.group().split('=')[1]
                 continue
             except:
@@ -177,25 +182,37 @@ class TrafficCop(Gtk.Application):
             self.label_iface.set_text(iface)
 
     def update_config_time(self):
-        self.label_applied.set_text(self.svc_start_time)
+        self.label_applied.set_text(self.tt_start)
 
-    def update_config_treeview(self):
-        config_dict = config.decode_yaml(self.config_file)
-        if self.config_store:
-            # Update store.
-            self.config_store = config.update_config_tree_store(self.config_store, config_dict)
-        else:
+    def update_treeview_config(self):
+        '''
+        This handles both initial config display and updating the display if the
+        config file is edited externally.
+        '''
+        new_config_store = config.convert_yaml_to_store(self.config_file)
+        if not self.config_store:
+            # Check if modified time of config file is newer than last service restart.
+            #   The config could have been externally modified. If so, those
+            #   changes could be shown here in the app without them actually having
+            #   been applied.
+            config_mtime = utils.get_file_mtime(self.config_file)
+            if config_mtime > self.tt_start:
+                print("WARNING: The config file has been externally modified. Applying the changes now.")
+                self.restart_service()
             # Define store.
-            self.config_store = config.config_tree_store(config_dict)
-        self.tv_config = config.config_tree_view(self.config_store)
-        return self.tv_config
+            self.config_store = new_config_store
+        else:
+            # Update store from the config file.
+            self.config_store = config.update_config_store(self.config_store, new_config_store)
+        self.treeview_config = config.create_config_treeview(self.config_store)
+        return self.treeview_config
 
     def update_info_widgets(self):
         self.update_service_props()
         self.update_state_toggles()
         self.update_device_name()
         self.update_config_time()
-        self.update_config_treeview()
+        self.update_treeview_config()
 
     def stop_service(self):
         cmd = ["systemctl", "stop", "tt-bandwidth-manager.service"]
@@ -205,13 +222,13 @@ class TrafficCop(Gtk.Application):
     def start_service(self):
         cmd = ["systemctl", "start", "tt-bandwidth-manager.service"]
         subprocess.run(cmd)
-        self.tt_pid = utils.wait_for_tt_start()
+        self.tt_pid, self.tt_start = utils.wait_for_tt_start()
         self.update_info_widgets()
 
     def restart_service(self):
         cmd = ["systemctl", "restart", "tt-bandwidth-manager.service"]
         subprocess.run(cmd)
-        self.tt_pid = utils.wait_for_tt_start()
+        self.tt_pid, self.tt_start = utils.wait_for_tt_start()
         # Check service status and update widgets.
         self.update_info_widgets()
 
