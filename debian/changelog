@@ -1,3 +1,9 @@
+tt-bandwidth-manager-gui (0.2.1) focal; urgency=medium
+
+  * Fixed variable error when starting app with service stopped.
+
+ -- Nate Marti <nate_marti@sil.org>  Tue, 13 Oct 2020 16:27:27 +0100
+
 tt-bandwidth-manager-gui (0.2.0) focal; urgency=medium
 
   * Added config display.
