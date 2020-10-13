@@ -16,6 +16,14 @@ def convert_epoch_to_human(epoch):
     human = time.ctime(epoch)
     return human
 
+def convert_human_to_log(human):
+    # Convert human to object.
+    #   Doesn't work: prob b/c my locale is FR but human is reported in EN.
+    str = time.strptime(human, '%a %b %d %H:%M:%S %Y') # Tue Oct 13 05:59:00 2020
+    # Convert object to log format.
+    log = time.strftime('%a %Y-%m-%d %H:%M%S %Z', str) # Tue 2020-10-13 05:59:00 WAT
+    return log
+
 def get_tt_info():
     exe = '/usr/bin/tt'
     procs = psutil.process_iter()
