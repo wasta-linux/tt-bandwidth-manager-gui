@@ -58,7 +58,7 @@ class Handler():
 
     def on_button_reset_clicked(self, button):
         current = Path("/etc/tt-config.yaml")
-        default = Path("/usr/share/tt-bandwidth-manager/tt-default-config.yaml")
+        default = app.app.default_config
 
         # Get user confirmation before resetting configuration.
         approved = app.app.get_user_confirmation()

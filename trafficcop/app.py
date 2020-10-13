@@ -44,6 +44,7 @@ class TrafficCop(Gtk.Application):
         # Define app-wide variables.
         self.tt_pid, self.tt_start = utils.get_tt_info()
         self.config_file = Path('/etc/tt-config.yaml')
+        self.default_config = Path("/usr/share/tt-bandwidth-manager/tt-default-config.yaml")
         self.config_store = ''
 
     def do_startup(self):
@@ -60,7 +61,7 @@ class TrafficCop(Gtk.Application):
         self.label_iface = self.builder.get_object('label_iface')
         self.button_log = self.builder.get_object('button_log')
         self.label_applied = self.builder.get_object('label_applied')
-        self.button_applied = self.builder.get_object('button_applied')
+        self.button_apply = self.builder.get_object('button_apply')
         self.button_config = self.builder.get_object('button_config')
         self.button_reset = self.builder.get_object('button_reset')
         self.w_config = self.builder.get_object('w_config')
@@ -73,13 +74,6 @@ class TrafficCop(Gtk.Application):
             print("\ntraffic-cop needs elevated privileges; e.g.:\n\n$ pkexec", bin, "\n$ sudo", bin)
             exit(1)
 
-        self.update_service_props()
-
-        # Populate widget data.
-        self.update_state_toggles()
-        self.update_device_name()
-        self.update_config_time()
-
         # Configure and show window.
         self.add_window(self.window)
         self.window.set_icon_name('traffic-cop')
@@ -90,6 +84,8 @@ class TrafficCop(Gtk.Application):
         self.treeview_config.show()
         self.vp_config.add(self.treeview_config)
 
+        # Populate widget data.
+        self.update_info_widgets()
 
         # Connect GUI signals to Handler class.
         self.builder.connect_signals(handler.Handler())
@@ -184,6 +180,26 @@ class TrafficCop(Gtk.Application):
     def update_config_time(self):
         self.label_applied.set_text(self.tt_start)
 
+    def update_button_states(self):
+        # TODO: I need a way to "watch" the config file if setting the "Apply"
+        #   button to "sensitive" is ever going to work.
+        # Update "Apply" button to be insensitive.
+        #self.button_apply.set_sensitive(False)
+        # Update "Reset..." button to be insensitive.
+        self.button_reset.set_sensitive(False)
+
+        # Set "Apply" button to proper state.
+        #config_mtime = utils.get_file_mtime(self.config_file)
+        #if self.tt_start and config_mtime > self.tt_start:
+            # Update "Apply" button to be sensitive.
+            #self.button_apply.set_sensitive(True)
+
+        # Set "Reset..." button to proper state.
+        diff_configs = utils.check_diff(self.config_file, self.default_config)
+        if not diff_configs == 0:
+            # Update "Reset..." button to be sensitive.
+            self.button_reset.set_sensitive(True)
+
     def update_treeview_config(self):
         '''
         This handles both initial config display and updating the display if the
@@ -212,6 +228,7 @@ class TrafficCop(Gtk.Application):
         self.update_state_toggles()
         self.update_device_name()
         self.update_config_time()
+        self.update_button_states()
         self.update_treeview_config()
 
     def stop_service(self):
