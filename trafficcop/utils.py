@@ -34,7 +34,7 @@ def get_tt_info():
                 return proc.pid, proc.start
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
-    return -1, -1
+    return -1, ""
 
 def get_file_mtime(file):
     statinfo = os.stat(file)
