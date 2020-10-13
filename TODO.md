@@ -1,5 +1,5 @@
 ### Planned features
-- [ ] Show current config in app window.
+- [x] Show current config in app window.
 - [ ] Show bandwidth used by currently configured processes.
 - [ ] Enable tweaking existing config in app window.
 - [ ] Enable adding new config in app window.
