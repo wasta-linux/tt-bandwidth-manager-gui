@@ -17,9 +17,10 @@ class All(unittest.TestCase):
     def setUp(self):
         self.tests_dir = Path(__file__).parents[1]
         self.pkg_dir = Path(__file__).parents[2]
+        self.example_config = self.tests_dir / 'data' / 'tt-example.yaml'
 
     def test_check_diff(self):
-        example = self.tests_dir / 'data' / 'tt-example.yaml'
+        example = self.example_config
         default = self.tests_dir / 'data' / 'tt-default-config.yaml'
         diff = utils.check_diff(example, default)
         self.assertNotEqual(diff, 0)
