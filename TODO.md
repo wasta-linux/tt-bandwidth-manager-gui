@@ -1,3 +1,6 @@
+### Fixes
+- [ ] Remove checks on config file mtimes?
+
 ### Planned features
 - [x] Show current config in app window.
 - [ ] Show bandwidth used by currently configured processes.

@@ -45,6 +45,8 @@ class Handler():
         target = worker.handle_button_config_clicked
         t_config = threading.Thread(target=target)
         t_config.start()
+        # Set apply button to "sensitive".
+        app.app.button_apply.set_sensitive(True)
 
         #target = worker.handle_config_changed
         #t_restart = threading.Thread(target=target)

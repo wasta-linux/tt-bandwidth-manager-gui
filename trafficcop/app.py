@@ -86,6 +86,7 @@ class TrafficCop(Gtk.Application):
 
         # Populate widget data.
         self.update_info_widgets()
+        self.button_apply.set_sensitive(False)
 
         # Connect GUI signals to Handler class.
         self.builder.connect_signals(handler.Handler())
