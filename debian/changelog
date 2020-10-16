@@ -1,3 +1,9 @@
+tt-bandwidth-manager-gui (0.2.2) focal; urgency=medium
+
+  * Fixed bad timestamp comparison causing service crash.
+
+ -- Nate Marti <nate_marti@sil.org>  Fri, 16 Oct 2020 22:00:55 +0100
+
 tt-bandwidth-manager-gui (0.2.1) focal; urgency=medium
 
   * Fixed variable error when starting app with service stopped.
