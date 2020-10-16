@@ -213,9 +213,13 @@ class TrafficCop(Gtk.Application):
             #   changes could be shown here in the app without them actually having
             #   been applied.
             config_mtime = utils.get_file_mtime(self.config_file)
-            if self.tt_start and config_mtime > self.tt_start:
-                print("WARNING: The config file has been externally modified. Applying the changes now.")
-                self.restart_service()
+            config_epoch = utils.convert_human_to_epoch(config_mtime)
+            if self.tt_start:
+                # Service is running.
+                tt_epoch = utils.convert_human_to_epoch(self.tt_start)
+                if config_epoch > tt_epoch:
+                    print("WARNING: The config file has been modified since the service started.\nApplying the changes now.")
+                    self.restart_service()
             # Define store.
             self.config_store = new_config_store
         else:

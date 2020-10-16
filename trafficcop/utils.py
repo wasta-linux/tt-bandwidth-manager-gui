@@ -1,10 +1,17 @@
 import contextlib
+import locale
 import os
 import psutil
 import shutil
 import subprocess
 import time
 
+
+@contextlib.contextmanager
+def setlocale(*args, **kw):
+    saved = locale.setlocale(locale.LC_ALL)
+    yield locale.setlocale(*args, **kw)
+    locale.setlocale(locale.LC_ALL, saved)
 
 def mute(func, *args, **kwargs):
     with open(os.devnull, 'w') as devnull:
@@ -16,13 +23,21 @@ def convert_epoch_to_human(epoch):
     human = time.ctime(epoch)
     return human
 
+def convert_human_to_epoch(human):
+    with setlocale(locale.LC_TIME, "C"):
+        str = time.strptime(human, '%a %b %d %H:%M:%S %Y') # Tue Oct 13 05:59:00 2020
+        # Convert object to epoch format.
+        epoch = time.mktime(str) # Tue 2020-10-13 05:59:00 WAT
+        return epoch
+
 def convert_human_to_log(human):
     # Convert human to object.
     #   Doesn't work: prob b/c my locale is FR but human is reported in EN.
-    str = time.strptime(human, '%a %b %d %H:%M:%S %Y') # Tue Oct 13 05:59:00 2020
-    # Convert object to log format.
-    log = time.strftime('%a %Y-%m-%d %H:%M%S %Z', str) # Tue 2020-10-13 05:59:00 WAT
-    return log
+    with setlocale(locale.LC_TIME, "C"):
+        str = time.strptime(human, '%a %b %d %H:%M:%S %Y') # Tue Oct 13 05:59:00 2020
+        # Convert object to log format.
+        log = time.strftime('%a %Y-%m-%d %H:%M%S %Z', str) # Tue 2020-10-13 05:59:00 WAT
+        return log
 
 def get_tt_info():
     exe = '/usr/bin/tt'
