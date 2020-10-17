@@ -49,6 +49,9 @@ def update_config_store(store, new_store):
     return store
 
 def convert_dict_to_list(k, v_dict):
+    if not type(v_dict) == dict:
+        # Scope (Global or Process) not given valid config.
+        v_dict = {}
     name = k
     try:
         dn_max = v_dict['download']
@@ -85,6 +88,12 @@ def convert_yaml_to_store(file):
         except yaml.YAMLError as e:
             print(e)
             return None
+
+    if not content:
+        # Yaml file has no viable content.
+        print("ERROR: {} has no usable content.".format(file))
+        store = ''
+        return store
 
     # Create a new "flat" dict to hold the config.
     config_dict = {}

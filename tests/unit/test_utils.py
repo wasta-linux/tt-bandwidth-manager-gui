@@ -1,27 +1,16 @@
-#import gi
 import unittest
-
-#gi.require_version("Gtk", "3.0")
-#from gi.repository import Gtk
-
 from pathlib import Path
 
-from trafficcop import app
-from trafficcop import config
 from trafficcop import utils
 
 # Assert*() methods here:
 # https://docs.python.org/3/library/unittest.html?highlight=pytest#unittest.TestCase
 
-class All(unittest.TestCase):
+class Misc(unittest.TestCase):
     def setUp(self):
         self.tests_dir = Path(__file__).parents[1]
         self.pkg_dir = Path(__file__).parents[2]
         self.example_config = self.tests_dir / 'data' / 'tt-example.yaml'
-
-    def test_IGNORE(self):
-        # This is for testing new functions.
-        pass
 
     def test_check_diff(self):
         example = self.example_config
