@@ -24,11 +24,21 @@ def convert_epoch_to_human(epoch):
     return human
 
 def convert_human_to_epoch(human):
-    with setlocale(locale.LC_TIME, "C"):
-        str = time.strptime(human, '%a %b %d %H:%M:%S %Y') # Tue Oct 13 05:59:00 2020
-        # Convert object to epoch format.
-        epoch = time.mktime(str) # Tue 2020-10-13 05:59:00 WAT
-        return epoch
+    if human:
+        with setlocale(locale.LC_TIME, "C"):
+            try:
+                str = time.strptime(human, '%a %b %d %H:%M:%S %Y') # Tue Oct 13 05:59:00 2020
+                # Convert object to epoch format.
+                epoch = time.mktime(str) # Tue 2020-10-13 05:59:00 WAT
+            except ValueError as v:
+                print(repr(v))
+                epoch = ''
+            except Exception as e:
+                print(repr(e))
+                epoch = ''
+    else:
+        epoch = human
+    return epoch
 
 def convert_human_to_log(human):
     # Convert human to object.

@@ -19,6 +19,10 @@ class All(unittest.TestCase):
         self.pkg_dir = Path(__file__).parents[2]
         self.example_config = self.tests_dir / 'data' / 'tt-example.yaml'
 
+    def test_IGNORE(self):
+        # This is for testing new functions.
+        pass
+
     def test_check_diff(self):
         example = self.example_config
         default = self.tests_dir / 'data' / 'tt-default-config.yaml'
@@ -35,18 +39,30 @@ class All(unittest.TestCase):
         )
         self.assertTrue(result)
 
-    def test_IGNORE(self):
-        # This is for testing new functions.
+    def tearDown(self):
         pass
 
-    def test_INCOMPLETE_restart_service(self):
-        pass
-        #app.app.do_startup()
-        # Get widget state.
-        #timestamp_pre = app.app.label_applied.get_text()
-        #app.app.restart_service()
-        #timestamp_post = app.app.label_applied.get_text()
-        #self.assertNotEqual(timestamp_pre, timestamp_post)
+class CompareTimestamps(unittest.TestCase):
+    def setUp(self):
+        self.convert = utils.convert_human_to_epoch
+
+    def test_a_older(self):
+        epochA = self.convert("Sat Oct 17 05:32:38 2020")
+        epochB = self.convert("Sun Oct 18 05:32:38 2020")
+        self.assertGreater(epochB, epochA)
+
+    def test_b_older(self):
+        epochA = self.convert("Sat Oct 17 05:32:38 2020")
+        epochB = self.convert("Thu Sep 17 05:32:38 2020")
+        self.assertGreater(epochA, epochB)
+
+    def test_bad(self):
+        epoch = utils.mute(self.convert, "Lun Sep 17 00:00:00 2020")
+        self.assertEqual(epoch, "")
+
+    def test_empty(self):
+        epoch = self.convert("")
+        self.assertEqual(epoch, "")
 
     def tearDown(self):
         pass
