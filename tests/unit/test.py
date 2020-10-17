@@ -33,16 +33,13 @@ class All(unittest.TestCase):
         # This only tests that tests/data/tt-config.yaml == tests/data/tt-config.yaml.bak.
         #   It doesn't test the creation of a properly-named new backup file.
         current = self.tests_dir / 'data' / 'tt-config.yaml'
-        result = utils.mute(
-            utils.ensure_config_backup,
-            current
-        )
+        result = utils.mute(utils.ensure_config_backup, current)
         self.assertTrue(result)
 
     def tearDown(self):
         pass
 
-class CompareTimestamps(unittest.TestCase):
+class Timestamps(unittest.TestCase):
     def setUp(self):
         self.convert = utils.convert_human_to_epoch
 
@@ -63,6 +60,29 @@ class CompareTimestamps(unittest.TestCase):
     def test_empty(self):
         epoch = self.convert("")
         self.assertEqual(epoch, "")
+
+    def tearDown(self):
+        pass
+
+class TtInfo(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_tt_off(self):
+        info = utils.get_tt_info(exe='/dev/null')
+        self.assertEqual(info[0], -1)
+
+    def test_tt_on(self):
+        info = utils.get_tt_info(exe='/sbin/init')
+        self.assertEqual(info[0], 1)
+
+    def test_wait_for_tt_fail(self):
+        info = utils.wait_for_tt_start(exe='/dev/null', max=5)
+        self.assertEqual(info[0], -1)
+
+    def test_wait_for_tt_pass(self):
+        info = utils.wait_for_tt_start(exe='/sbin/init', max=5)
+        self.assertEqual(info[0], 1)
 
     def tearDown(self):
         pass

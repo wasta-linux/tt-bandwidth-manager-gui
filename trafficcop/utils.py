@@ -49,8 +49,7 @@ def convert_human_to_log(human):
         log = time.strftime('%a %Y-%m-%d %H:%M%S %Z', str) # Tue 2020-10-13 05:59:00 WAT
         return log
 
-def get_tt_info():
-    exe = '/usr/bin/tt'
+def get_tt_info(exe='/usr/bin/tt'):
     procs = psutil.process_iter()
     for proc in procs:
         try:
@@ -66,12 +65,14 @@ def get_file_mtime(file):
     mtime = convert_epoch_to_human(statinfo.st_mtime)
     return mtime
 
-def wait_for_tt_start():
+def wait_for_tt_start(exe='/usr/bin/tt', max=100):
     # Wait for service status to start, otherwise update_service_props()
     #   may not get the correct info.
     ct = 0
-    while ct < 100:
-        tt_pid, tt_start = get_tt_info()
+    # Initially assume that tt is not running.
+    tt_pid, tt_start = -1, ''
+    while ct < max:
+        tt_pid, tt_start = get_tt_info(exe)
         if psutil.pid_exists(tt_pid):
             return tt_pid, tt_start
         time.sleep(0.1)
