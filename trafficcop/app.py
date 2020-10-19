@@ -5,9 +5,11 @@ import gzip
 import logging
 import os
 import psutil
+import queue
 import re
 import shutil
 import subprocess
+import threading
 import time
 
 from pathlib import Path
@@ -21,6 +23,7 @@ from gi.repository import Gtk
 from trafficcop import config
 from trafficcop import handler
 from trafficcop import utils
+from trafficcop import worker
 
 
 class TrafficCop(Gtk.Application):
@@ -46,8 +49,12 @@ class TrafficCop(Gtk.Application):
         self.config_file = Path('/etc/tt-config.yaml')
         self.default_config = Path("/usr/share/tt-bandwidth-manager/tt-default-config.yaml")
         self.config_store = ''
+        self.net_hogs_q = queue.Queue()
+        self.main_pid = os.getpid()
+        self.managed_ports = {}
 
     def do_startup(self):
+        ''' "Startup" is the setting up of the app, either for "activate" or for "open". '''
         # Define builder and its widgets.
         Gtk.Application.do_startup(self)
 
@@ -68,6 +75,7 @@ class TrafficCop(Gtk.Application):
         self.vp_config = self.builder.get_object('vp_config')
 
     def do_activate(self):
+        ''' "Activate" is the displaying of the window itself. '''
         # Verify execution with elevated privileges.
         if os.geteuid() != 0:
             bin = '/usr/bin/traffic-cop'
@@ -90,6 +98,20 @@ class TrafficCop(Gtk.Application):
 
         # Connect GUI signals to Handler class.
         self.builder.connect_signals(handler.Handler())
+
+        # Start tracking operations (self.window must be shown first).
+        target = worker.parse_nethogs_to_queue
+        args = self.net_hogs_q, self.window
+        t_nethogs = threading.Thread(target=target, args=args)
+        t_nethogs.start()
+        target = worker.print_queue_items
+        args = self.net_hogs_q, self.window
+        t_print_bw = threading.Thread(target=target, args=args)
+        t_print_bw.start()
+        target = worker.list_ports_per_process
+        args = self.managed_ports, self.window
+        t_track_ports = threading.Thread(target=target, args=args)
+        t_track_ports.start()
 
     def do_command_line(self, command_line):
         options = command_line.get_options_dict()
