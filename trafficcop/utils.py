@@ -124,3 +124,10 @@ def ensure_config_backup(current):
         if diff == 0:
             print(already, backup)
             return True
+
+def match_cmdline_to_process(cmdline):
+    proc_list = psutil.process_iter(attrs=['pid', 'cmdline'])
+    for proc in proc_list:
+        if proc.cmdline():
+            print(proc.info)
+    #return process
