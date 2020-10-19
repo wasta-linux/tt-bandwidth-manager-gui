@@ -57,6 +57,8 @@ class Handler():
         app.app.config_file = Path('/etc/tt-config.yaml')
         # Restart the service to apply updated configuration.
         app.app.restart_service()
+        # Disable the button again.
+        button.set_sensitive(False)
 
     def on_button_reset_clicked(self, button):
         current = Path("/etc/tt-config.yaml")
