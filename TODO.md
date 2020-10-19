@@ -2,8 +2,8 @@
 - [x] Show current config in app window.
 - [ ] Develop a decent test suite.
 - [ ] Show bandwidth used by currently configured processes.
-  - run nethogs -t, outputting to a tempfile
-  - match process name from nethogs with process being managed by tt
+  - run nethogs -t, outputting to a queue
+  - match cmdline from nethogs to "process" being managed by tt
   - ALSO:
     - netstat can tie ports to pids and process names:
     - sudo netstat -tnp | grep skype | tr -s ' ' | cut -d' ' -f4,7 | awk -F':' '{print $2}' | sort -u
