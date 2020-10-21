@@ -52,6 +52,7 @@ class TrafficCop(Gtk.Application):
         self.net_hogs_q = queue.Queue()
         self.main_pid = os.getpid()
         self.managed_ports = {}
+        self.scopes = {}
 
     def do_startup(self):
         ''' "Startup" is the setting up of the app, either for "activate" or for "open". '''
@@ -102,16 +103,12 @@ class TrafficCop(Gtk.Application):
         # Start tracking operations (self.window must be shown first).
         target = worker.parse_nethogs_to_queue
         args = self.net_hogs_q, self.window
-        t_nethogs = threading.Thread(target=target, args=args)
+        t_nethogs = threading.Thread(target=target, args=args, name='T-nh')
         t_nethogs.start()
-        target = worker.print_queue_items
-        args = self.net_hogs_q, self.window
-        t_print_bw = threading.Thread(target=target, args=args)
-        t_print_bw.start()
-        target = worker.list_ports_per_process
-        args = self.managed_ports, self.window
-        t_track_ports = threading.Thread(target=target, args=args)
-        t_track_ports.start()
+
+        # Start bandwidth rate updater.
+        t_bw_updater = threading.Thread(target=worker.bw_updater, name='T-bw')
+        t_bw_updater.start()
 
     def do_command_line(self, command_line):
         options = command_line.get_options_dict()

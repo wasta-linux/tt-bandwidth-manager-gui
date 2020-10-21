@@ -2,6 +2,7 @@ import contextlib
 import locale
 import os
 import psutil
+import re
 import shutil
 import subprocess
 import time
@@ -48,6 +49,24 @@ def convert_human_to_log(human):
         # Convert object to log format.
         log = time.strftime('%a %Y-%m-%d %H:%M%S %Z', str) # Tue 2020-10-13 05:59:00 WAT
         return log
+
+def convert_bytes_to_human(bytes_per_sec):
+    # "human" means "3 significant digits, changing power as necessary."
+    float = bytes_per_sec
+    unit = 'B/s'
+    if len(str(int(float))) > 3:
+        # Switch to KB.
+        float = float / 1000
+        unit = 'KB/s'
+        if len(str(int(float))) > 3:
+            # Switch to MB.
+            float = float / 1000
+            unit = 'MB/s'
+            if len(str(int(float))) > 3:
+                # Switch to GB.
+                float = float / 1000
+                unit = 'GB/s'
+    return [float, unit]
 
 def get_tt_info(exe='/usr/bin/tt'):
     procs = psutil.process_iter()
@@ -125,9 +144,106 @@ def ensure_config_backup(current):
             print(already, backup)
             return True
 
-def match_cmdline_to_process(cmdline):
-    proc_list = psutil.process_iter(attrs=['pid', 'cmdline'])
+def update_scopes(scopes, queue, store):
+    # Get time of current iteration.
+    epoch = time.time()
+
+    # Move current scopes dict's 'new' entries to 'last'.
+    for scope in scopes.keys():
+        scopes[scope]['last'] = scopes[scope]['now'].copy()
+
+    # Update scopes dict 'new' entries.
+    while not queue.empty():
+        line = queue.get().split()
+        cmdline = line[0]
+        b_up = int(float(line[-2]))
+        b_dn = int(float(line[-1]))
+        scope = match_cmdline_to_scope(cmdline, store)
+        if scope not in scopes.keys():
+            # Initialize scopes[scope].
+            scopes[scope] = {
+                'last': {
+                    'time': None,
+                    'bytes_up': None,
+                    'bytes_dn': None,
+                },
+                'now': {
+                    'time': epoch,
+                    'bytes_up': b_up,
+                    'bytes_dn': b_dn,
+                }
+            }
+            continue
+
+        # Add epoch time to 'now'.
+        scopes[scope]['now']['time'] = epoch
+        # Update bytes for current scope.
+        scopes[scope]['now']['bytes_up'] = b_up
+        scopes[scope]['now']['bytes_dn'] = b_dn
+
+    return scopes
+
+def match_cmdline_to_scope(cmdline, store):
+    # Strip pid and user from cmdline.
+    cmdline_list = cmdline.split('/')
+    cmdline_pid = cmdline_list[-2]
+    exe = '/'.join(cmdline_list[:-2])
+
+    # Get scope names, match-type, and match-str from store.
+    scopes = {}
+    for row in store:
+        if row[0] == 'Global':
+            continue
+        scopes[row[0]] = row[11:]
+
+    # Get cmdlines from proces_iter.
+    match_cmdline_and_proc = {}
+    proc_list = psutil.process_iter(attrs=['name', 'exe', 'cmdline'])
     for proc in proc_list:
-        if proc.cmdline():
-            print(proc.info)
-    #return process
+        if not proc.cmdline():
+            continue
+        p_cmdline = ' '.join(proc.cmdline())
+        p_exe = proc.exe()
+        if p_exe == exe:
+            match_cmdline_and_proc = proc.info
+            break
+
+    # Match cmdline with scope.
+    scope = 'Global'
+    if not match_cmdline_and_proc:
+        return scope
+
+    for k, v in scopes.items():
+        # k = scope; v = [match-type, match-str]
+        if v[0] == 'name':
+            match = re.match(v[1], match_cmdline_and_proc['name'])
+            if match:
+                scope = k
+                break
+        elif v[0] == 'exe':
+            # See if scope exe matches proc exe.
+            match = re.match(v[1], match_cmdline_and_proc['exe'])
+            if match:
+                scope = k
+                break
+        elif v[0] == 'cmdline':
+            # See if scope cmdline equals proc cmdline.
+            if v[1] == match_cmdline_and_proc['cmdline']:
+                scope = k
+                break
+        else:
+            # Unhandled match-type.
+            print('no match for', k, ':', v)
+            continue
+    return scope
+
+def calculate_scope_data_usage(scope, data):
+    elapsed = data['now']['time'] - data['last']['time']
+    bytes_up = data['now']['bytes_up'] - data['last']['bytes_up']
+    bytes_dn = data['now']['bytes_dn'] - data['last']['bytes_dn']
+    rate_up = 0
+    rate_dn = 0
+    if elapsed > 0:
+        rate_up = bytes_up / elapsed
+        rate_dn = bytes_dn / elapsed
+    return [rate_dn, rate_up]

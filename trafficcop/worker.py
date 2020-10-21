@@ -12,6 +12,8 @@ import time
 from pathlib import Path
 
 from trafficcop import app
+from trafficcop import config
+from trafficcop import utils
 
 
 def handle_button_log_clicked():
@@ -47,71 +49,40 @@ def handle_config_changed():
     #print("Service Start Time =", read_time)
 
 def parse_nethogs_to_queue(queue, main_window):
-    cmd = ['nethogs', '-t', '-v2']
-    with subprocess.Popen(cmd, stdout=subprocess.PIPE, encoding='utf-8') as p:
-        while main_window.is_visible() == True:
-            try:
-                line = p.stdout.readline()
-                if line == '' and p.poll() is not None:
-                    # Process completed. (Shouldn't happen.)
-                    break
-                elif line[0] == '/':
-                    parts = line.split()
-                    epoch = time.time()
-                    parts.insert(0, epoch)
-                    queue.put(parts)
-            except KeyboardInterrupt:
+    delay = 1
+    cmd = ['nethogs', '-t', '-v2', '-d' + str(delay)]
+    stdout = subprocess.PIPE
+    stderr = subprocess.STDOUT
+    with subprocess.Popen(cmd, stdout=stdout, stderr=stderr, encoding='utf-8') as p:
+        while main_window.is_visible():
+            # There is a long wait for each line: sometimes nearly 2 seconds!
+            line = p.stdout.readline()
+            if line[0] == '/':
+                queue.put(line)
+            elif line == '' and p.poll() is not None:
+                # Process completed. (Shouldn't happen.)
                 break
 
-def print_queue_items(queue, main_window):
-    while main_window.is_visible() == True:
-        if not queue.empty():
-            item = queue.get()
-            print(item)
-        else:
-            time.sleep(1)
-        time.sleep(2)
+def bw_updater():
+    while app.app.window.is_visible():
+        time.sleep(1)
+        # Get all applicable cmdlines & bytes transferred for each scope in config.
+        # Sum the total sent for each scope, as well as the total received and give it a timestamp.
+        app.app.scopes = utils.update_scopes(app.app.scopes, app.app.net_hogs_q, app.app.config_store)
 
-def list_ports_per_process(dict, main_window):
-    # "scope" is "Global" or one of the "Names" given by the user.
-    # "Shaping traffic for 'Name' on local ports [port], [port], ..."
-    lines = '100'
-    cmd = [
-        'journalctl',
-        '--lines=' + lines,
-        '--unit=tt-bandwidth-manager.service',
-        '--output=cat',
-        '--no-pager',
-    ]
-    while main_window.is_visible() == True:
-        output = subprocess.run(cmd, stdout=subprocess.PIPE, encoding='utf-8')
-        lines = output.stdout.splitlines()
-        # Example line:
-        # 0          1            2 3        4 5                        6 7       8       9   10      11 12    13    14
-        # 2020-10-19 16:10:15.116 | INFO     | traffictoll.cli:main:344 - Shaping traffic for 'Skype' on local ports 60362, 60364
-        for line in lines:
-            l = line.split()
-            if len(l) < 11:
+        # Get the upload and download rates (B/s).
+        rates_dict = {}
+        for scope, data in app.app.scopes.items():
+            #if scope == 'Global':
+            #    continue
+            if not data['last']['time']:
                 continue
-            name = l[10][1:-1] # remove quotes from item 10
-            if l[7] == 'Removing':
-                # l[14] is first port number.
-                for i in l[14:]:
-                    i = i.rstrip(',') # strip commas if multiple ports are listed
-                    try:
-                        dict[name].remove(i)
-                    except (KeyError, ValueError):
-                        # name not in dict or port not already in list.
-                        pass
-            elif l[7] == 'Shaping':
-                to_add = []
-                for i in l[14:]:
-                    i = i.rstrip(',')
-                    to_add.append(i)
-                try:
-                    dict[name].extend(to_add)
-                    dict[name] = list(set(dict[name])) # set removes duplicates
-                except KeyError:
-                    # No known ports yet for name.
-                    dict[name] = list(set(to_add))
-        time.sleep(0.5)
+            rates = utils.calculate_scope_data_usage(scope, data)
+
+            # Adjust the number to only show 3 sig. digits; change units as necessary (KB/s, MB/s, GB/s).
+            human_up = utils.convert_bytes_to_human(rates[0])
+            human_dn = utils.convert_bytes_to_human(rates[1])
+            rates_dict[scope] = [*human_up, *human_dn]
+
+        # Update the values shown in the treeview.
+        config.update_store_rates(app.app.config_store, rates_dict)

@@ -12,6 +12,7 @@ from trafficcop import worker
 
 class Handler():
     def gtk_widget_destroy(self, *args):
+        #print(threading.enumerate(), 'threads')
         app.app.quit()
 
     def on_toggle_unit_state_state_set(self, widget, state):
@@ -38,12 +39,12 @@ class Handler():
 
     def on_button_log_clicked(self, *args):
         target = worker.handle_button_log_clicked
-        t_log = threading.Thread(target=target)
+        t_log = threading.Thread(target=target, name='T-log')
         t_log.start()
 
     def on_button_config_clicked(self, *args):
         target = worker.handle_button_config_clicked
-        t_config = threading.Thread(target=target)
+        t_config = threading.Thread(target=target, name='T-cfg')
         t_config.start()
         # Set apply button to "sensitive".
         app.app.button_apply.set_sensitive(True)
