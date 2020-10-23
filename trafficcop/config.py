@@ -19,7 +19,7 @@ def create_config_treeview(store):
     r_int.set_alignment(0.5, 0.0)
     r_float = Gtk.CellRendererText()
     r_float.set_alignment(1.0, 0.0)
-    c_name = Gtk.TreeViewColumn("Scope", r_name, text=0)
+    c_name = Gtk.TreeViewColumn("Process", r_name, text=0)
     c_dn_max = Gtk.TreeViewColumn("Max Down", rend_str, text=1)
     c_up_max = Gtk.TreeViewColumn("Max Up", rend_str, text=2)
     c_dn_min = Gtk.TreeViewColumn("Min Down", rend_str, text=3)
@@ -28,8 +28,10 @@ def create_config_treeview(store):
     c_up_pri = Gtk.TreeViewColumn("Pri. Up", r_int, text=6)
     c_dn_rt = Gtk.TreeViewColumn("Rate Down", r_float, text=7)
     c_dn_u = Gtk.TreeViewColumn("", r_name, text=8)
+    c_dn_u.set_fixed_width(40)
     c_up_rt = Gtk.TreeViewColumn("Rate Up", r_float, text=9)
     c_up_u = Gtk.TreeViewColumn("", r_name, text=10)
+    c_up_u.set_fixed_width(40)
     tree.append_column(c_name)
     c_list = [c_dn_max, c_up_max, c_dn_min, c_up_min, c_dn_pri, c_up_pri]
     for c in c_list:
@@ -56,14 +58,22 @@ def update_store_rates(store, dict):
         for scope, values in dict.items():
             if row[0] == scope:
                 if scope == 'Global':
-                    row[7] = ''
-                    row[8] = ''
-                    row[9] = ''
-                    row[10] = ''
-                row[7] = '{:.2f}'.format(values[0])
-                row[8] = values[1]
-                row[9] = '{:.2f}'.format(values[2])
-                row[10] = values[3]
+                    row[7] = ' '*4
+                    row[8] = ' '*4
+                    row[9] = ' '*4
+                    row[10] = ' '*4
+                if values[0] <= 0:
+                    row[7] = ' '*4
+                    row[8] = ' '*4
+                else:
+                    row[7] = '{:.2f}'.format(values[0])
+                    row[8] = values[1]
+                if values[2] <= 0:
+                    row[9] = ' '*4
+                    row[10] = ' '*4
+                else:
+                    row[9] = '{:.2f}'.format(values[2])
+                    row[10] = values[3]
                 break
 
 def convert_dict_to_list(k, v_dict):
@@ -100,10 +110,10 @@ def convert_dict_to_list(k, v_dict):
     #   support 'name', 'exe', and 'cmdline'. Others seem less useful.
     # List of possible attributes:
     #   https://psutil.readthedocs.io/en/latest/index.html#psutil.Process.as_dict
-    dn_rate = '{:.2f}'.format(0)
-    dn_unit = 'B/s'
-    up_rate = '{:.2f}'.format(0)
-    up_unit = 'B/s'
+    dn_rate = ' '*4 #'{:.2f}'.format(0)
+    dn_unit = ' '*4 #'B/s'
+    up_rate = ' '*4 #'{:.2f}'.format(0)
+    up_unit = ' '*4 #'B/s'
     try:
         m_type = 'name'
         m_str = v_dict['match'][0][m_type]
