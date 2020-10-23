@@ -85,7 +85,9 @@ def get_file_mtime(file):
     return mtime
 
 def wait_for_tt_start(exe='/usr/bin/tt', max=100):
-    # Wait for service status to start, otherwise update_service_props()
+    '''
+    Wait for service status to start, otherwise update_service_props()
+    '''
     #   may not get the correct info.
     ct = 0
     # Initially assume that tt is not running.
@@ -107,7 +109,9 @@ def check_diff(file1, file2):
     return result.returncode
 
 def ensure_config_backup(current):
-    # Make a backup of user config; add index to file name if other backup already exists.
+    '''
+    Make a backup of user config; add index to file name if other backup already exists.
+    '''
     already = "Current config already backed up at"
     name = current.stem
     suffix = ".yaml.bak"
@@ -145,6 +149,9 @@ def ensure_config_backup(current):
             return True
 
 def update_scopes(scopes, queue, store):
+    '''
+    Retrieve items from nethogs queue and show updated download and upload rates.
+    '''
     # Get time of current iteration.
     epoch = time.time()
 
@@ -155,10 +162,10 @@ def update_scopes(scopes, queue, store):
     # Update scopes dict 'new' entries.
     while not queue.empty():
         line = queue.get().split()
-        cmdline = line[0]
+        exe_pid_usr = line[0]
         b_up = int(float(line[-2]))
         b_dn = int(float(line[-1]))
-        scope = match_cmdline_to_scope(cmdline, store)
+        scope = match_cmdline_to_scope(exe_pid_usr, store)
         if scope not in scopes.keys():
             # Initialize scopes[scope].
             scopes[scope] = {
@@ -180,13 +187,12 @@ def update_scopes(scopes, queue, store):
         # Update bytes for current scope.
         scopes[scope]['now']['bytes_up'] = b_up
         scopes[scope]['now']['bytes_dn'] = b_dn
-
     return scopes
 
-def match_cmdline_to_scope(cmdline, store):
+def match_cmdline_to_scope(exe_pid_usr, store):
     # Strip pid and user from cmdline.
-    cmdline_list = cmdline.split('/')
-    cmdline_pid = cmdline_list[-2]
+    cmdline_list = exe_pid_usr.split('/')
+    pid = cmdline_list[-2]
     exe = '/'.join(cmdline_list[:-2])
 
     # Get scope names, match-type, and match-str from store.
@@ -197,38 +203,37 @@ def match_cmdline_to_scope(cmdline, store):
         scopes[row[0]] = row[11:]
 
     # Get cmdlines from proces_iter.
-    match_cmdline_and_proc = {}
-    proc_list = psutil.process_iter(attrs=['name', 'exe', 'cmdline'])
+    match_exe_pid_usr_and_proc = {}
+    proc_list = psutil.process_iter(attrs=['pid', 'name', 'exe', 'cmdline'])
     for proc in proc_list:
         if not proc.cmdline():
             continue
-        p_cmdline = ' '.join(proc.cmdline())
-        p_exe = proc.exe()
-        if p_exe == exe:
-            match_cmdline_and_proc = proc.info
+        p_pid = str(proc.pid)
+        if p_pid == pid:
+            match_exe_pid_usr_and_proc = proc.info
             break
 
     # Match cmdline with scope.
     scope = 'Global'
-    if not match_cmdline_and_proc:
+    if not match_exe_pid_usr_and_proc:
         return scope
 
     for k, v in scopes.items():
         # k = scope; v = [match-type, match-str]
         if v[0] == 'name':
-            match = re.match(v[1], match_cmdline_and_proc['name'])
+            match = re.match(v[1], match_exe_pid_usr_and_proc['name'])
             if match:
                 scope = k
                 break
         elif v[0] == 'exe':
             # See if scope exe matches proc exe.
-            match = re.match(v[1], match_cmdline_and_proc['exe'])
+            match = re.match(v[1], match_exe_pid_usr_and_proc['exe'])
             if match:
                 scope = k
                 break
         elif v[0] == 'cmdline':
             # See if scope cmdline equals proc cmdline.
-            if v[1] == match_cmdline_and_proc['cmdline']:
+            if v[1] == match_exe_pid_usr_and_proc['cmdline']:
                 scope = k
                 break
         else:
