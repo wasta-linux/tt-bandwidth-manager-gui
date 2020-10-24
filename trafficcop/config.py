@@ -62,13 +62,13 @@ def update_store_rates(store, rates_dict):
                     row[7] = ' '*4
                     row[8] = ' '*4
                 else:
-                    row[7] = '{:.2f}'.format(values[0])
+                    row[7] = '{:.0f}'.format(values[0])
                     row[8] = values[1]
                 if values[2] <= 0:
                     row[9] = ' '*4
                     row[10] = ' '*4
                 else:
-                    row[9] = '{:.2f}'.format(values[2])
+                    row[9] = '{:.0f}'.format(values[2])
                     row[10] = values[3]
                 break
 
@@ -191,7 +191,19 @@ def convert_config_rates_to_human(config):
             pref_out = 'G'
 
     unit_out = pref_out + 'B/s'
-    return ["{:.2f}".format(qty), unit_out]
+    return ["{:.0f}".format(qty), unit_out]
+
+def convert_config_list_units(c_list):
+    # 0: scope
+    # 1: max down
+    # 2: max up
+    # 3: min down
+    # 4: min up
+    for i in range(1,5):
+        if not c_list[i]:
+            continue
+        h_list = convert_config_rates_to_human(c_list[i])
+        c_list[i] = ' '.join(h_list)
 
 def convert_yaml_to_store(file):
     # Get dict from yaml file.
@@ -231,5 +243,6 @@ def convert_yaml_to_store(file):
     store = Gtk.ListStore(str, str, str, str, str, int, int, str, str, str, str, str, str)
     for k, v in config_dict.items():
         l = convert_dict_to_list(k, v)
+        convert_config_list_units(l) # in-place updating of list items
         l_iter = store.append(l)
     return store
