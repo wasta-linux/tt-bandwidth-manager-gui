@@ -1,4 +1,5 @@
 import gi
+import re
 import yaml
 
 gi.require_version("Gtk", "3.0")
@@ -53,15 +54,10 @@ def update_config_store(store, new_store):
         store.append(row[:])
     return store
 
-def update_store_rates(store, dict):
+def update_store_rates(store, rates_dict):
     for row in store:
-        for scope, values in dict.items():
+        for scope, values in rates_dict.items():
             if row[0] == scope:
-                if scope == 'Global':
-                    row[7] = ' '*4
-                    row[8] = ' '*4
-                    row[9] = ' '*4
-                    row[10] = ' '*4
                 if values[0] <= 0:
                     row[7] = ' '*4
                     row[8] = ' '*4
@@ -139,6 +135,63 @@ def convert_dict_to_list(k, v_dict):
         m_type, m_str
     ]
     return list
+
+def convert_config_rates_to_human(config):
+    '''
+    Takes single string of numbers+letters and outputs a list:
+        8bit -> ['1', 'B/s']
+        100kbps -> ['100', 'KB/s']
+        128kbit -> ['16', 'KB/s']
+        8mbit -> ['1', 'MB/s']
+
+    Handle these pieces with the following cases:
+       number:
+       - [0-9]+ = quantity
+       prefixes:
+       - k|m|g|t = 10^[3|6|9|12]
+       - ki|mi|gi|ti = 2^[10|20|30|40]
+       units:
+       - bit = bits per second
+       - bps = bytes per second
+    '''
+    re_qty = re.match('^[0-9]+', config)
+    re_full = re.match('(^[0-9]+)([kmgt]?[i]?)([bipst]{3,})$', config)
+    qty = float(re_full.group(1))   # 128, etc.
+    pref_in = re_full.group(2)      # k or ki, etc.
+    unit_in = re_full.group(3)      # bit or bps
+
+    if unit_in == 'bit':
+        # Convert bits to bytes.
+        qty = qty/8
+
+    pref_out = ''
+    if len(pref_in) == 2 and pref_in[1] == 'i':
+         # Take BINARY bytes * 1000/1024 to get SI bytes.
+         qty = qty*1000/1024
+
+    if pref_in == 'k' or pref_in == 'ki':
+        pref_out = 'K'
+    elif pref_in == 'm' or pref_in == 'mi':
+        pref_out = 'M'
+    elif pref_in == 'g' or pref_in == 'gi':
+        pref_out = 'G'
+    elif pref_in == 't' or pref_in == 'ti':
+        pref_out = 'T'
+
+    # Move "down the ladder" if less than 1.
+    if qty < 1 and pref_out:
+        qty = qty*1000
+        if pref_out == 'K':
+            pref_out = ''
+        elif pref_out == 'M':
+            pref_out = 'K'
+        elif pref_out == 'G':
+            pref_out = 'M'
+        elif pref_out == 'T':
+            pref_out = 'G'
+
+    unit_out = pref_out + 'B/s'
+    return ["{:.2f}".format(qty), unit_out]
 
 def convert_yaml_to_store(file):
     # Get dict from yaml file.

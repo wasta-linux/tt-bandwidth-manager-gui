@@ -50,7 +50,10 @@ def handle_config_changed():
 
 def parse_nethogs_to_queue(queue, main_window):
     delay = 1
-    cmd = ['nethogs', '-t', '-v2', '-d' + str(delay)]
+    device = utils.get_net_device()
+    # If no device is given, then all devices are monitored, which double-counts
+    #   on gateway device plus tc device.
+    cmd = ['nethogs', '-t', '-v2', '-d' + str(delay), device]
     stdout = subprocess.PIPE
     stderr = subprocess.STDOUT
     with subprocess.Popen(cmd, stdout=stdout, stderr=stderr, encoding='utf-8') as p:
@@ -73,11 +76,9 @@ def bw_updater():
         # Get the upload and download rates (B/s).
         rates_dict = {}
         for scope, data in app.app.scopes.items():
-            #if scope == 'Global':
-            #    continue
             if not data['last']['time']:
                 continue
-            rates = utils.calculate_scope_data_usage(scope, data)
+            rates = utils.calculate_data_rates(data)
 
             # Adjust the number to only show 3 sig. digits; change units as necessary (KB/s, MB/s, GB/s).
             human_up = utils.convert_bytes_to_human(rates[0])

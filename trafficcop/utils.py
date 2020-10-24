@@ -1,5 +1,6 @@
 import contextlib
 import locale
+import netifaces
 import os
 import psutil
 import re
@@ -19,6 +20,30 @@ def mute(func, *args, **kwargs):
         with contextlib.redirect_stdout(devnull):
             output = func(*args, **kwargs)
     return output
+
+def get_net_device():
+    '''
+    Return the gateway internet device.
+    If there are multiple gateways found, then the highest priority device is returned:
+        1. Bluetooth (AF_BLUETOOTH)
+        2. Cellular (AF_PPPOX)
+        3. IPv6 (AF_INET6)
+        4. IPv4 (AF_INET)
+    '''
+    gws = netifaces.gateways()
+    families = [
+        netifaces.AF_BLUETOOTH,
+        netifaces.AF_PPPOX,
+        netifaces.AF_INET6,
+        netifaces.AF_INET,
+    ]
+    for family in families:
+        try:
+            device = gws['default'][family][1]
+            break
+        except KeyError:
+            continue
+    return device
 
 def convert_epoch_to_human(epoch):
     human = time.ctime(epoch)
@@ -148,6 +173,16 @@ def ensure_config_backup(current):
             print(already, backup)
             return True
 
+def update_global_scope():
+    '''
+    Update system bandwidth usage for the Global scope.
+    '''
+    net_io = psutil.net_io_counters(pernic=True)
+    dev = get_net_device()
+    bytes_up = net_io[dev].bytes_sent
+    bytes_dn = net_io[dev].bytes_recv
+    return [bytes_up, bytes_dn]
+
 def update_scopes(scopes, queue, store):
     '''
     Retrieve items from nethogs queue and show updated download and upload rates.
@@ -166,6 +201,9 @@ def update_scopes(scopes, queue, store):
         b_up = int(float(line[-2]))
         b_dn = int(float(line[-1]))
         scope = match_cmdline_to_scope(exe_pid_usr, store)
+        if not scope:
+            # Not matched; will be counted in 'Global'.
+            continue
         if scope not in scopes.keys():
             # Initialize scopes[scope].
             scopes[scope] = {
@@ -174,19 +212,31 @@ def update_scopes(scopes, queue, store):
                     'bytes_up': None,
                     'bytes_dn': None,
                 },
-                'now': {
-                    'time': epoch,
-                    'bytes_up': b_up,
-                    'bytes_dn': b_dn,
-                }
+                'now': {}
             }
-            continue
 
         # Add epoch time to 'now'.
         scopes[scope]['now']['time'] = epoch
         # Update bytes for current scope.
         scopes[scope]['now']['bytes_up'] = b_up
         scopes[scope]['now']['bytes_dn'] = b_dn
+
+    # Update Global scope.
+    b_up = update_global_scope()[0]
+    b_dn = update_global_scope()[1]
+    if 'Global' not in scopes.keys():
+        scopes['Global'] = {
+                'last': {
+                    'time': None,
+                    'bytes_up': None,
+                    'bytes_dn': None,
+                },
+                'now': {}
+        }
+    scopes['Global']['now']['time'] = epoch
+    scopes['Global']['now']['bytes_up'] = b_up
+    scopes['Global']['now']['bytes_dn'] = b_dn
+
     return scopes
 
 def match_cmdline_to_scope(exe_pid_usr, store):
@@ -214,9 +264,9 @@ def match_cmdline_to_scope(exe_pid_usr, store):
             break
 
     # Match cmdline with scope.
-    scope = 'Global'
+    scope = None
     if not match_exe_pid_usr_and_proc:
-        return scope
+        return None
 
     for k, v in scopes.items():
         # k = scope; v = [match-type, match-str]
@@ -242,7 +292,7 @@ def match_cmdline_to_scope(exe_pid_usr, store):
             continue
     return scope
 
-def calculate_scope_data_usage(scope, data):
+def calculate_data_rates(data):
     elapsed = data['now']['time'] - data['last']['time']
     bytes_up = data['now']['bytes_up'] - data['last']['bytes_up']
     bytes_dn = data['now']['bytes_dn'] - data['last']['bytes_dn']

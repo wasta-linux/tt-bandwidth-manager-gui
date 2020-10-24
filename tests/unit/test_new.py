@@ -16,8 +16,7 @@ class New(unittest.TestCase):
         pass
 
     def test_new(self):
-        result = True
-        self.assertTrue(result)
+        self.assertTrue(True)
 
     def tearDown(self):
         pass
