@@ -3,8 +3,6 @@ import re
 import yaml
 
 gi.require_version("Gtk", "3.0")
-#from gi.repository import Gio
-#from gi.repository import GLib
 from gi.repository import Gtk
 
 from trafficcop import app
@@ -12,32 +10,40 @@ from trafficcop import app
 
 def create_config_treeview(store):
     tree = Gtk.TreeView(model=store)
-    r_name = Gtk.CellRendererText()
-    r_name.set_alignment(0.0, 0.0)
-    rend_str = Gtk.CellRendererText()
-    rend_str.set_alignment(0.5, 0.0)
-    r_int = Gtk.CellRendererText()
-    r_int.set_alignment(0.5, 0.0)
-    r_float = Gtk.CellRendererText()
-    r_float.set_alignment(1.0, 0.0)
-    c_name = Gtk.TreeViewColumn("Process", r_name, text=0)
-    c_dn_max = Gtk.TreeViewColumn("Max Down", rend_str, text=1)
-    c_up_max = Gtk.TreeViewColumn("Max Up", rend_str, text=2)
-    c_dn_min = Gtk.TreeViewColumn("Min Down", rend_str, text=3)
-    c_up_min = Gtk.TreeViewColumn("Min Up", rend_str, text=4)
-    c_dn_pri = Gtk.TreeViewColumn("Pri. Down", r_int, text=5)
-    c_up_pri = Gtk.TreeViewColumn("Pri. Up", r_int, text=6)
-    c_dn_rt = Gtk.TreeViewColumn("Rate Down", r_float, text=7)
-    c_dn_u = Gtk.TreeViewColumn("", r_name, text=8)
+    #tree.set_grid_lines(Gtk.TreeViewGridLines.HORIZONTAL)
+    r_left = Gtk.CellRendererText()
+    r_left.set_alignment(0.0, 0.0)
+    r_center = Gtk.CellRendererText()
+    r_center.set_alignment(0.5, 0.0)
+    r_right = Gtk.CellRendererText()
+    r_right.set_alignment(1.0, 0.0)
+
+    # Configure columns.
+    c_name = Gtk.TreeViewColumn("Process", r_left, text=0)
+
+    c_dn_max = Gtk.TreeViewColumn("Max Down", r_right, text=1)
+    c_up_max = Gtk.TreeViewColumn("Max Up", r_right, text=2)
+    c_dn_min = Gtk.TreeViewColumn("Min Down", r_right, text=3)
+    c_up_min = Gtk.TreeViewColumn("Min Up", r_right, text=4)
+    rates = [c_dn_max, c_up_max, c_dn_min, c_up_min]
+    for r in rates:
+        r.set_fixed_width(80)
+
+    c_dn_pri = Gtk.TreeViewColumn("Pri. Down", r_center, text=5)
+    c_up_pri = Gtk.TreeViewColumn("Pri. Up", r_center, text=6)
+
+    c_dn_rt = Gtk.TreeViewColumn("Rate Down", r_right, text=7)
+    c_dn_u = Gtk.TreeViewColumn("", r_left, text=8)
     c_dn_u.set_fixed_width(40)
-    c_up_rt = Gtk.TreeViewColumn("Rate Up", r_float, text=9)
-    c_up_u = Gtk.TreeViewColumn("", r_name, text=10)
+
+    c_up_rt = Gtk.TreeViewColumn("Rate Up", r_right, text=9)
+    c_up_u = Gtk.TreeViewColumn("", r_left, text=10)
     c_up_u.set_fixed_width(40)
     tree.append_column(c_name)
     c_list = [c_dn_max, c_up_max, c_dn_min, c_up_min, c_dn_pri, c_up_pri]
     for c in c_list:
-        c.set_alignment(0.5)
-        c.set_expand(True)
+        c.set_alignment(0.5)    # set title alignment
+        c.set_expand(True)      # expand when window is wider than necessary
         tree.append_column(c)
     tree.append_column(c_dn_rt)
     tree.append_column(c_dn_u)
