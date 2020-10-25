@@ -52,15 +52,44 @@ def create_config_treeview(store):
     return tree
 
 def update_config_store(store, new_store):
-    # Delete all existing rows.
+    # For each row in new_store:
+    for nrow in new_store:
+        # If new_store row is in old store...
+        nscope = nrow[0]
+        match = False
+        for row in store:
+            scope = row[0]
+            if nscope == scope:
+                match = True
+                if nrow[1:7] != row[1:7]:
+                    # ...update old store row with new_store row data.
+                    row[1:7] = nrow[1:7]
+                break
+        # If new_store row is not in old store...
+        if not match:
+            # ...append new_store row to old store.
+            store.append(nrow[:])
+    # For each row in old store:
     for row in store:
-        store.remove(row.iter)
-    # Add new rows.
-    for row in new_store:
-        store.append(row[:])
+        # If old store row is not in new_store...
+        scope = row[0]
+        match = False
+        for nrow in new_store:
+            nscope = nrow[0]
+            if scope == nscope:
+                match = True
+                #break
+        if not match:
+            # ...remove old store row.
+            store.remove(row.iter)
+
+    # TODO: Sort rows:
+    #   Global first, alphabetically by scope after
     return store
 
 def update_store_rates(store, rates_dict):
+    # WARNING: This assumes the scopes in rates_dict are the same as those in store.
+    #   In other words it assumes that the store hasn't changed.
     for row in store:
         for scope, values in rates_dict.items():
             if row[0] == scope:
@@ -205,11 +234,13 @@ def convert_config_list_units(c_list):
     # 2: max up
     # 3: min down
     # 4: min up
+    c_list = c_list.copy()
     for i in range(1,5):
         if not c_list[i]:
             continue
         h_list = convert_config_rates_to_human(c_list[i])
         c_list[i] = ' '.join(h_list)
+    return c_list
 
 def convert_yaml_to_store(file):
     # Get dict from yaml file.
@@ -249,6 +280,42 @@ def convert_yaml_to_store(file):
     store = Gtk.ListStore(str, str, str, str, str, int, int, str, str, str, str, str, str)
     for k, v in config_dict.items():
         l = convert_dict_to_list(k, v)
-        convert_config_list_units(l) # in-place updating of list items
+        l = convert_config_list_units(l) # in-place updating of list items
         l_iter = store.append(l)
     return store
+
+def convert_yaml_to_dict(file):
+    # Get dict from yaml file.
+    with open(file, 'r') as stream:
+        try:
+            content = yaml.safe_load(stream)
+        except yaml.YAMLError as e:
+            print(e)
+            return ''
+
+    if not content:
+        # Yaml file has no viable content.
+        print("ERROR: {} has no usable content.".format(file))
+        return ''
+
+    # Create a new "flat" dict to hold the config.
+    config_dict = {}
+    # Move global config keys down into their own dict under a 'Global' key.
+    g_name = 'Global'
+    g_config = convert_dict_to_list(g_name, content)
+    config_dict[g_name] = {
+        'download': g_config[1],
+        'upload': g_config[2],
+        'download-minimum': g_config[3],
+        'upload-minimum': g_config[4],
+        'download-priority': g_config[5],
+        'upload-priority': g_config[6],
+        'match-type': g_config[7],
+        'match-str': g_config[8],
+    }
+
+    # Move process config keys up to the main dict.
+    for p_name, p in content['processes'].items():
+        config_dict[p_name] = p
+
+    return config_dict

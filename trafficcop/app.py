@@ -225,27 +225,29 @@ class TrafficCop(Gtk.Application):
         This handles both initial config display and updating the display if the
         config file is edited externally.
         '''
-        new_config_store = config.convert_yaml_to_store(self.config_file)
-        if not self.config_store:
+        if self.tt_start:
+            # Service is running.
             # Check if modified time of config file is newer than last service restart.
             #   The config could have been externally modified. If so, those
             #   changes could be shown here in the app without them actually having
             #   been applied.
             config_mtime = utils.get_file_mtime(self.config_file)
             config_epoch = utils.convert_human_to_epoch(config_mtime)
-            if self.tt_start:
-                # Service is running.
-                tt_epoch = utils.convert_human_to_epoch(self.tt_start)
-                if config_epoch > tt_epoch:
-                    print("WARNING: The config file has been modified since the service started.\nApplying the changes now.")
-                    self.restart_service()
-            # Define store.
-            self.config_store = new_config_store
-        else:
-            # Update store from the config file.
-            self.config_store = config.update_config_store(self.config_store, new_config_store)
-        self.treeview_config = config.create_config_treeview(self.config_store)
-        return self.treeview_config
+            tt_epoch = utils.convert_human_to_epoch(self.tt_start)
+            if config_epoch > tt_epoch:
+                print("WARNING: The config file has been modified since the service started.\nApplying the changes now.")
+                self.restart_service()
+            else:
+                if not self.config_store:
+                    # App is just starting up; create the store.
+                    self.config_store = config.convert_yaml_to_store(self.config_file)
+                else:
+                    # Update the store.
+                    new_config_store = config.convert_yaml_to_store(self.config_file)
+                    self.config_store = config.update_config_store(self.config_store, new_config_store)
+
+        treeview_config = config.create_config_treeview(self.config_store)
+        return treeview_config
 
     def update_info_widgets(self):
         self.update_service_props()
@@ -253,7 +255,6 @@ class TrafficCop(Gtk.Application):
         self.update_device_name()
         self.update_config_time()
         self.update_button_states()
-        self.update_treeview_config()
 
     def stop_service(self):
         cmd = ["systemctl", "stop", "tt-bandwidth-manager.service"]
@@ -265,6 +266,7 @@ class TrafficCop(Gtk.Application):
         subprocess.run(cmd)
         self.tt_pid, self.tt_start = utils.wait_for_tt_start()
         self.update_info_widgets()
+        self.treeview_config = self.update_treeview_config()
 
     def restart_service(self):
         cmd = ["systemctl", "restart", "tt-bandwidth-manager.service"]
@@ -272,6 +274,7 @@ class TrafficCop(Gtk.Application):
         self.tt_pid, self.tt_start = utils.wait_for_tt_start()
         # Check service status and update widgets.
         self.update_info_widgets()
+        self.treeview_config = self.update_treeview_config()
 
     def get_user_confirmation(self):
         text = "The current configuration file will be backed up first."

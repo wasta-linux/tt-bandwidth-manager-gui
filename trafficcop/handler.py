@@ -16,8 +16,6 @@ class Handler():
         app.app.quit()
 
     def on_toggle_unit_state_state_set(self, widget, state):
-        sstate = str(state)
-        print("Unit State toggled to", sstate + ".")
         # Apply new state to the service.
         if state == True:
             cmd = ["systemctl", "enable", "tt-bandwidth-manager.service"]
