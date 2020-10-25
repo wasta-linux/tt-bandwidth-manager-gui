@@ -28,19 +28,18 @@ def handle_button_log_clicked():
         "--output=cat",
         "--no-pager",
         "--since=\'" + app.app.svc_start_time + "\'",
-        #"--since=\'" + app.app.tt_start + "\'", # this doesn't work
     ]
     cmd_txt = " ".join(cmd)
     subprocess.run(cmd_txt, shell=True)
     return
 
 def handle_button_config_clicked():
-    cmd = [
-        "gedit",
-        "/etc/tt-config.yaml",
-    ]
-    subprocess.run(cmd)
-    return
+    # Open config file in gedit.
+    subprocess.run(
+        ["gedit", "/etc/tt-config.yaml"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
 
 def handle_config_changed():
     pass
@@ -80,7 +79,7 @@ def bw_updater():
                 continue
             rates = utils.calculate_data_rates(data)
 
-            # Adjust the number to only show 3 sig. digits; change units as necessary (KB/s, MB/s, GB/s).
+            # Adjust the number to only show 3 digits; change units as necessary (KB/s, MB/s, GB/s).
             human_up = utils.convert_bytes_to_human(rates[0])
             human_dn = utils.convert_bytes_to_human(rates[1])
             rates_dict[scope] = [*human_up, *human_dn]
