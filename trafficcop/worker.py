@@ -68,6 +68,9 @@ def parse_nethogs_to_queue(queue, main_window):
 def bw_updater():
     while app.app.window.is_visible():
         time.sleep(1.5)
+        # Update the device name.
+        app.app.update_device_name()
+        
         # Get all applicable cmdlines & bytes transferred for each scope in config.
         # Sum the total sent for each scope, as well as the total received and give it a timestamp.
         app.app.scopes = utils.update_scopes(app.app.scopes, app.app.net_hogs_q, app.app.config_store)

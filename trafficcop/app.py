@@ -45,7 +45,7 @@ class TrafficCop(Gtk.Application):
             self.ui_dir = str(current_file_path.parents[1] / 'data' / 'ui')
 
         # Define app-wide variables.
-        self.tt_pid, self.tt_start = utils.get_tt_info()
+        self.tt_pid, self.tt_start, self.tt_dev = utils.get_tt_info()
         self.config_file = Path('/etc/tt-config.yaml')
         self.default_config = Path("/usr/share/tt-bandwidth-manager/tt-default-config.yaml")
         self.config_store = ''
@@ -144,7 +144,7 @@ class TrafficCop(Gtk.Application):
 
     def update_service_props(self):
         # Get true service start time.
-        self.tt_pid, self.tt_start = utils.get_tt_info()
+        self.tt_pid, self.tt_start, self.tt_dev = utils.get_tt_info()
 
         # Get state of systemd service.
         cmd = [
@@ -193,11 +193,12 @@ class TrafficCop(Gtk.Application):
 
     def update_device_name(self):
         # Get name of managed interface.
-        self.label_iface.set_text("--")
-        if psutil.pid_exists(self.tt_pid):
-            proc = psutil.Process(self.tt_pid)
-            iface = proc.cmdline()[2]
-            self.label_iface.set_text(iface)
+        pid, time, dev = utils.get_tt_info()
+        if pid > 0:
+            #iface = self.tt_dev
+            self.label_iface.set_text(dev)
+        else:
+            self.label_iface.set_text("--")
 
     def update_config_time(self):
         self.label_applied.set_text(self.tt_start)
@@ -265,14 +266,14 @@ class TrafficCop(Gtk.Application):
     def start_service(self):
         cmd = ["systemctl", "start", "tt-bandwidth-manager.service"]
         subprocess.run(cmd)
-        self.tt_pid, self.tt_start = utils.wait_for_tt_start()
+        self.tt_pid, self.tt_start, self.tt_dev = utils.wait_for_tt_start()
         self.update_info_widgets()
         self.treeview_config = self.update_treeview_config()
 
     def restart_service(self):
         cmd = ["systemctl", "restart", "tt-bandwidth-manager.service"]
         subprocess.run(cmd)
-        self.tt_pid, self.tt_start = utils.wait_for_tt_start()
+        self.tt_pid, self.tt_start, self.tt_dev = utils.wait_for_tt_start()
         # Check service status and update widgets.
         self.update_info_widgets()
         self.treeview_config = self.update_treeview_config()

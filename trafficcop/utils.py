@@ -98,11 +98,12 @@ def get_tt_info(exe='/usr/bin/tt'):
     for proc in procs:
         try:
             if exe in proc.cmdline():
+                proc.dev = proc.cmdline()[2]
                 proc.start = convert_epoch_to_human(proc.create_time())
-                return proc.pid, proc.start
+                return proc.pid, proc.start, proc.dev
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
-    return -1, ""
+    return -1, '', ''
 
 def get_file_mtime(file):
     statinfo = os.stat(file)
@@ -116,14 +117,14 @@ def wait_for_tt_start(exe='/usr/bin/tt', max=100):
     '''
     ct = 0
     # Initially assume that tt is not running.
-    tt_pid, tt_start = -1, ''
+    tt_pid, tt_start, tt_dev = -1, '', ''
     while ct < max:
-        tt_pid, tt_start = get_tt_info(exe)
+        tt_pid, tt_start, tt_dev = get_tt_info(exe)
         if psutil.pid_exists(tt_pid):
-            return tt_pid, tt_start
+            return tt_pid, tt_start, tt_dev
         time.sleep(0.1)
         ct += 1
-    return tt_pid, tt_start
+    return tt_pid, tt_start, tt_dev
 
 def check_diff(file1, file2):
     result = subprocess.run(
