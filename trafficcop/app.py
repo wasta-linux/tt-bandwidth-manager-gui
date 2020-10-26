@@ -75,18 +75,9 @@ class TrafficCop(Gtk.Application):
         self.w_config = self.builder.get_object('w_config')
         self.vp_config = self.builder.get_object('vp_config')
 
-    def do_activate(self):
-        ''' "Activate" is the displaying of the window itself. '''
-        # Verify execution with elevated privileges.
-        if os.geteuid() != 0:
-            bin = '/usr/bin/traffic-cop'
-            print("\ntraffic-cop needs elevated privileges; e.g.:\n\n$ pkexec", bin, "\n$ sudo", bin)
-            exit(1)
-
-        # Configure and show window.
+        # Main window.
         self.add_window(self.window)
         self.window.set_icon_name('traffic-cop')
-        self.window.show()
 
         # Populate config viewport.
         self.treeview_config = self.update_treeview_config()
@@ -99,6 +90,17 @@ class TrafficCop(Gtk.Application):
 
         # Connect GUI signals to Handler class.
         self.builder.connect_signals(handler.Handler())
+
+    def do_activate(self):
+        ''' "Activate" is the displaying of the window itself. '''
+        # Verify execution with elevated privileges.
+        if os.geteuid() != 0:
+            bin = '/usr/bin/traffic-cop'
+            print("\ntraffic-cop needs elevated privileges; e.g.:\n\n$ pkexec", bin, "\n$ sudo", bin)
+            exit(1)
+
+        # Show window.
+        self.window.show()
 
         # Start tracking operations (self.window must be shown first).
         target = worker.parse_nethogs_to_queue
