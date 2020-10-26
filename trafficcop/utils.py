@@ -94,7 +94,7 @@ def convert_bytes_to_human(bytes_per_sec):
     return [float, unit]
 
 def get_tt_info(exe='/usr/bin/tt'):
-    procs = psutil.process_iter()
+    procs = psutil.process_iter(attrs=['pid', 'cmdline', 'create_time'])
     for proc in procs:
         try:
             if exe in proc.cmdline():
@@ -111,9 +111,9 @@ def get_file_mtime(file):
 
 def wait_for_tt_start(exe='/usr/bin/tt', max=100):
     '''
-    Wait for service status to start, otherwise update_service_props()
+    Wait for service status to start, otherwise update_service_props() may not
+    get the correct info.
     '''
-    #   may not get the correct info.
     ct = 0
     # Initially assume that tt is not running.
     tt_pid, tt_start = -1, ''

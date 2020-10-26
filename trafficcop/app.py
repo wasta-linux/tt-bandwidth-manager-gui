@@ -225,6 +225,10 @@ class TrafficCop(Gtk.Application):
         This handles both initial config display and updating the display if the
         config file is edited externally.
         '''
+        if not self.config_store:
+            # App is just starting up; create the store.
+            self.config_store = config.convert_yaml_to_store(self.config_file)
+
         if self.tt_start:
             # Service is running.
             # Check if modified time of config file is newer than last service restart.
@@ -238,13 +242,8 @@ class TrafficCop(Gtk.Application):
                 print("WARNING: The config file has been modified since the service started.\nApplying the changes now.")
                 self.restart_service()
             else:
-                if not self.config_store:
-                    # App is just starting up; create the store.
-                    self.config_store = config.convert_yaml_to_store(self.config_file)
-                else:
-                    # Update the store.
-                    new_config_store = config.convert_yaml_to_store(self.config_file)
-                    self.config_store = config.update_config_store(self.config_store, new_config_store)
+                new_config_store = config.convert_yaml_to_store(self.config_file)
+                self.config_store = config.update_config_store(self.config_store, new_config_store)
 
         treeview_config = config.create_config_treeview(self.config_store)
         return treeview_config
