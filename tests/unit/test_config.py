@@ -61,15 +61,15 @@ class Bytes(unittest.TestCase):
         ]
 
         outputs = [
-            ['0.50', 'B/s'],
-            ['1.00', 'B/s'],
-            ['2.00', 'KB/s'],
-            ['2.88', 'KB/s'],
-            ['8.00', 'KB/s'],
-            ['16.00', 'KB/s'],
-            ['375.00', 'KB/s'],
-            ['2.93', 'MB/s'],
-            ['854.49', 'MB/s'],
+            ['0', 'B/s'],
+            ['1', 'B/s'],
+            ['2', 'KB/s'],
+            ['3', 'KB/s'],
+            ['8', 'KB/s'],
+            ['16', 'KB/s'],
+            ['375', 'KB/s'],
+            ['3', 'MB/s'],
+            ['854', 'MB/s'],
         ]
         for i in range(len(rates)):
             human = config.convert_config_rates_to_human(rates[i])
