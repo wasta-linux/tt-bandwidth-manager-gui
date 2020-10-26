@@ -42,7 +42,7 @@ def get_net_device():
             device = gws['default'][family][1]
             break
         except KeyError:
-            continue
+            device = None
     return device
 
 def convert_epoch_to_human(epoch):
@@ -179,6 +179,9 @@ def update_global_scope():
     '''
     net_io = psutil.net_io_counters(pernic=True)
     dev = get_net_device()
+    if not dev:
+        # No current connection.
+        return [0, 0]
     bytes_up = net_io[dev].bytes_sent
     bytes_dn = net_io[dev].bytes_recv
     return [bytes_up, bytes_dn]
