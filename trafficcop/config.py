@@ -20,6 +20,7 @@ def create_config_treeview(store):
 
     # Configure columns.
     c_name = Gtk.TreeViewColumn("Process", r_left, text=0)
+    c_name.set_sort_column_id(0)
 
     c_dn_max = Gtk.TreeViewColumn("Max Down", r_right, text=1)
     c_up_max = Gtk.TreeViewColumn("Max Up", r_right, text=2)
@@ -30,7 +31,9 @@ def create_config_treeview(store):
         r.set_fixed_width(80)
 
     c_dn_pri = Gtk.TreeViewColumn("Pri. Down", r_center, text=5)
+    c_dn_pri.set_sort_column_id(5)
     c_up_pri = Gtk.TreeViewColumn("Pri. Up", r_center, text=6)
+    c_up_pri.set_sort_column_id(6)
 
     c_dn_rt = Gtk.TreeViewColumn("Rate Down", r_right, text=7)
     c_dn_u = Gtk.TreeViewColumn("", r_left, text=8)
@@ -82,9 +85,6 @@ def update_config_store(store, new_store):
         if not match:
             # ...remove old store row.
             store.remove(row.iter)
-
-    # TODO: Sort rows:
-    #   Global first, alphabetically by scope after
     return store
 
 def update_store_rates(store, rates_dict):
