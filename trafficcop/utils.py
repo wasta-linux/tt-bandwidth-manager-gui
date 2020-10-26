@@ -259,7 +259,10 @@ def match_cmdline_to_scope(exe_pid_usr, store):
     match_exe_pid_usr_and_proc = {}
     proc_list = psutil.process_iter(attrs=['pid', 'name', 'exe', 'cmdline'])
     for proc in proc_list:
-        if not proc.cmdline():
+        try:
+            if not proc.cmdline():
+                continue
+        except psutil.NoSuchProcess:
             continue
         p_pid = str(proc.pid)
         if p_pid == pid:
