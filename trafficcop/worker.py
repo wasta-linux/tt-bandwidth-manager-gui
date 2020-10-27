@@ -1,14 +1,11 @@
 """ Functions that run in background threads. """
 # All of these functions run inside of threads and use GLib to communicate back.
 
-#import gi
 import psutil
 import subprocess
 import sys
 import time
 
-#from gi.repository import Gdk, GLib, Gtk
-#gi.require_version("Gtk", "3.0")
 from pathlib import Path
 
 from trafficcop import app
@@ -70,7 +67,7 @@ def bw_updater():
         time.sleep(1.5)
         # Update the device name.
         app.app.update_device_name()
-        
+
         # Get all applicable cmdlines & bytes transferred for each scope in config.
         # Sum the total sent for each scope, as well as the total received and give it a timestamp.
         app.app.scopes = utils.update_scopes(app.app.scopes, app.app.net_hogs_q, app.app.config_store)

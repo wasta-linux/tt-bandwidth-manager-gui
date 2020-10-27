@@ -97,11 +97,11 @@ def get_tt_info(exe='/usr/bin/tt'):
     procs = psutil.process_iter(attrs=['pid', 'cmdline', 'create_time'])
     for proc in procs:
         try:
-            if exe in proc.cmdline():
+            if exe == proc.cmdline()[1]:
                 proc.dev = proc.cmdline()[2]
                 proc.start = convert_epoch_to_human(proc.create_time())
                 return proc.pid, proc.start, proc.dev
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess, IndexError):
             pass
     return -1, '', ''
 
@@ -258,14 +258,12 @@ def match_cmdline_to_scope(exe_pid_usr, store):
 
     # Get cmdlines from proces_iter.
     match_exe_pid_usr_and_proc = {}
-    proc_list = psutil.process_iter(attrs=['pid', 'name', 'exe', 'cmdline'])
+    proc_list = psutil.process_iter(attrs=['name', 'exe', 'cmdline'])
     for proc in proc_list:
         try:
-            if not proc.cmdline():
-                continue
+            p_pid = str(proc.pid)
         except psutil.NoSuchProcess:
             continue
-        p_pid = str(proc.pid)
         if p_pid == pid:
             match_exe_pid_usr_and_proc = proc.info
             break
