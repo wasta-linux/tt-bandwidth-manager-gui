@@ -1,3 +1,11 @@
+tt-bandwidth-manager-gui (0.3.0) focal; urgency=medium
+
+  * Added bandwidth usage fields in the config display.
+  * Reduced CPU usage.
+  * Improved handling of device switching.
+
+ -- Nate Marti <nate_marti@sil.org>  Wed, 28 Oct 2020 10:58:10 +0100
+
 tt-bandwidth-manager-gui (0.2.2) focal; urgency=medium
 
   * Fixed bad timestamp comparison causing service crash.
