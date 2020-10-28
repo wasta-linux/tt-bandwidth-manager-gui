@@ -198,13 +198,16 @@ def update_scopes(scopes, queue, store):
     for scope in scopes.keys():
         scopes[scope]['last'] = scopes[scope]['now'].copy()
 
+    # Get fresh proc list.
+    proc_list = psutil.process_iter(attrs=['name', 'exe', 'cmdline'])
+
     # Update scopes dict 'new' entries.
     while not queue.empty():
         line = queue.get().split()
         exe_pid_usr = line[0]
         b_up = int(float(line[-2]))
         b_dn = int(float(line[-1]))
-        scope = match_cmdline_to_scope(exe_pid_usr, store)
+        scope = match_cmdline_to_scope(exe_pid_usr, store, proc_list)
         if not scope:
             # Not matched; will be counted in 'Global'.
             continue
@@ -226,8 +229,9 @@ def update_scopes(scopes, queue, store):
         scopes[scope]['now']['bytes_dn'] = b_dn
 
     # Update Global scope.
-    b_up = update_global_scope()[0]
-    b_dn = update_global_scope()[1]
+    bytes = update_global_scope()
+    b_up = bytes[0]
+    b_dn = bytes[1]
     if 'Global' not in scopes.keys():
         scopes['Global'] = {
                 'last': {
@@ -243,7 +247,7 @@ def update_scopes(scopes, queue, store):
 
     return scopes
 
-def match_cmdline_to_scope(exe_pid_usr, store):
+def match_cmdline_to_scope(exe_pid_usr, store, proc_list):
     # Strip pid and user from cmdline.
     cmdline_list = exe_pid_usr.split('/')
     pid = cmdline_list[-2]
@@ -258,7 +262,6 @@ def match_cmdline_to_scope(exe_pid_usr, store):
 
     # Get cmdlines from proces_iter.
     match_exe_pid_usr_and_proc = {}
-    proc_list = psutil.process_iter(attrs=['name', 'exe', 'cmdline'])
     for proc in proc_list:
         try:
             p_pid = str(proc.pid)

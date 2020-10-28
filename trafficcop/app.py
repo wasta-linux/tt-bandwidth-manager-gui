@@ -195,7 +195,6 @@ class TrafficCop(Gtk.Application):
         # Get name of managed interface.
         pid, time, dev = utils.get_tt_info()
         if pid > 0:
-            #iface = self.tt_dev
             self.label_iface.set_text(dev)
         else:
             self.label_iface.set_text("--")
