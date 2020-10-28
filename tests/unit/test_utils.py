@@ -55,23 +55,25 @@ class Timestamps(unittest.TestCase):
 
 class TtInfo(unittest.TestCase):
     def setUp(self):
-        pass
+        # exe must have at least 3 commandline tokens for the function to work.
+        self.valid_exe = '/usr/bin/networkd-dispatcher'
+        self.invalid_exe = '/dev/null'
 
     def test_tt_off(self):
-        info = utils.get_tt_info(exe='/dev/null')
+        info = utils.get_tt_info(exe=self.invalid_exe)
         self.assertEqual(info[0], -1)
 
     def test_tt_on(self):
-        info = utils.get_tt_info(exe='/sbin/init')
-        self.assertEqual(info[0], 1)
+        info = utils.get_tt_info(exe=self.valid_exe)
+        self.assertGreater(info[0], 0)
 
     def test_wait_for_tt_fail(self):
-        info = utils.wait_for_tt_start(exe='/dev/null', max=5)
+        info = utils.wait_for_tt_start(exe=self.invalid_exe, max=5)
         self.assertEqual(info[0], -1)
 
     def test_wait_for_tt_pass(self):
-        info = utils.wait_for_tt_start(exe='/sbin/init', max=5)
-        self.assertEqual(info[0], 1)
+        info = utils.wait_for_tt_start(exe=self.valid_exe, max=5)
+        self.assertGreater(info[0], 0)
 
     def tearDown(self):
         pass
