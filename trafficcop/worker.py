@@ -1,11 +1,13 @@
 """ Functions that run in background threads. """
 # All of these functions run inside of threads and use GLib to communicate back.
 
+import gi
 import psutil
 import subprocess
 import sys
 import time
 
+from gi.repository import GLib
 from pathlib import Path
 
 from trafficcop import app
@@ -66,7 +68,7 @@ def bw_updater():
     while app.app.window.is_visible():
         time.sleep(1.5)
         # Update the device name.
-        app.app.update_device_name()
+        GLib.idle_add(app.app.update_device_name)
 
         # Get all applicable cmdlines & bytes transferred for each scope in config.
         # Sum the total sent for each scope, as well as the total received and give it a timestamp.
@@ -85,4 +87,4 @@ def bw_updater():
             rates_dict[scope] = [*human_up, *human_dn]
 
         # Update the values shown in the treeview.
-        config.update_store_rates(app.app.config_store, rates_dict)
+        GLib.idle_add(config.update_store_rates, app.app.config_store, rates_dict)

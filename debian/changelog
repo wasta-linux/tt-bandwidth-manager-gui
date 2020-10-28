@@ -1,3 +1,9 @@
+tt-bandwidth-manager-gui (0.3.1) focal; urgency=medium
+
+  * Use idle_add when updating Gtk elements from thread.
+
+ -- Nate Marti <nate_marti@sil.org>  Wed, 28 Oct 2020 16:16:13 +0100
+
 tt-bandwidth-manager-gui (0.3.0) focal; urgency=medium
 
   * Added bandwidth usage fields in the config display.
