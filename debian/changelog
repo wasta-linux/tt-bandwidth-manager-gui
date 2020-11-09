@@ -1,3 +1,9 @@
+tt-bandwidth-manager-gui (0.3.2) focal; urgency=medium
+
+  * Properly handle --version check from commandline.
+
+ -- Nate Marti <nate_marti@sil.org>  Mon, 09 Nov 2020 17:18:55 +0100
+
 tt-bandwidth-manager-gui (0.3.1) focal; urgency=medium
 
   * Use idle_add when updating Gtk elements from thread.

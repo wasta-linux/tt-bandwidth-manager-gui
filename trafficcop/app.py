@@ -32,7 +32,6 @@ class TrafficCop(Gtk.Application):
             application_id='org.wasta.apps.traffic-cop',
             flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
         )
-
         # Add CLI options.
         self.add_main_option(
             'version', ord('V'), GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
@@ -55,7 +54,10 @@ class TrafficCop(Gtk.Application):
         self.scopes = {}
 
     def do_startup(self):
-        ''' "Startup" is the setting up of the app, either for "activate" or for "open". '''
+        '''
+        do_startup is the setting up of the app, either for "activate" or for "open".
+        It runs just after __init__.
+        '''
         # Define builder and its widgets.
         Gtk.Application.do_startup(self)
 
@@ -91,28 +93,10 @@ class TrafficCop(Gtk.Application):
         # Connect GUI signals to Handler class.
         self.builder.connect_signals(handler.Handler())
 
-    def do_activate(self):
-        ''' "Activate" is the displaying of the window itself. '''
-        # Verify execution with elevated privileges.
-        if os.geteuid() != 0:
-            bin = '/usr/bin/traffic-cop'
-            print("\ntraffic-cop needs elevated privileges; e.g.:\n\n$ pkexec", bin, "\n$ sudo", bin)
-            exit(1)
-
-        # Show window.
-        self.window.show()
-
-        # Start tracking operations (self.window must be shown first).
-        target = worker.parse_nethogs_to_queue
-        args = self.net_hogs_q, self.window
-        t_nethogs = threading.Thread(target=target, args=args, name='T-nh')
-        t_nethogs.start()
-
-        # Start bandwidth rate updater.
-        t_bw_updater = threading.Thread(target=worker.bw_updater, name='T-bw')
-        t_bw_updater.start()
-
     def do_command_line(self, command_line):
+        '''
+        do_command_line runs after do_startup and before do_activate.
+        '''
         options = command_line.get_options_dict()
         options = options.end().unpack()
 
@@ -133,13 +117,39 @@ class TrafficCop(Gtk.Application):
                     first_line = f.readline().strip().decode()
             # 2nd term in 1st line of changelog; also need to remove parentheses.
             version = first_line.split()[1][1:-1]
-            print("\ntt-bandwidth-manager-gui", version)
-            return 0
+            #print("Traffic Cop\t\t\t(app)")
+            #print("tt-bandwidth-manager-gui\t(package)")
+            #print(version)
+            print("Traffic Cop (app) / tt-bandwidth-manager-gui (package): {}".format(version))
+            exit(0)
+
+    def do_activate(self):
+        '''
+        do_activate is the displaying of the window. It runs last after do_command_line.
+        '''
+        # Verify execution with elevated privileges.
+        if os.geteuid() != 0:
+            self.args.insert(0, 'pkexec')
+            subprocess.run(self.args)
+            exit()
+
+        # Show window.
+        self.window.show()
+
+        # Start tracking operations (self.window must be shown first).
+        target = worker.parse_nethogs_to_queue
+        args = self.net_hogs_q, self.window
+        t_nethogs = threading.Thread(target=target, args=args, name='T-nh')
+        t_nethogs.start()
+
+        # Start bandwidth rate updater.
+        t_bw_updater = threading.Thread(target=worker.bw_updater, name='T-bw')
+        t_bw_updater.start()
 
         # Verify execution with elevated privileges.
         if os.geteuid() != 0:
             bin = '/usr/bin/traffic-cop'
-            print("\ntraffic-cop needs elevated privileges; e.g.:\n\n$ pkexec", bin, "\n$ sudo", bin)
+            print("traffic-cop needs elevated privileges; e.g.:\n\n$ pkexec", bin, "\n$ sudo", bin)
             exit(1)
 
     def update_service_props(self):
