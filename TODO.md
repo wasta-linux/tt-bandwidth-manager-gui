@@ -11,11 +11,13 @@
 ### Updated row layout
 |     | Process               | Maximum        | Minimum       | Priority   | Current        |
 | --- | --------------------- | -------------- | ------------- | ---------- | -------------- |  
-| [*] | Firefox | [16] KB/s [up] | [0] KB/s [up] | [1] [up] | [0] KB/s [up] |
+| [ ] | Firefox | [16] KB/s [up] | [0] KB/s [up] | [1] [up] | [0] KB/s [up] |
 |     | exe: /usr/lib/firefox | [96] KB/s [dn] | [0] KB/s [dn] | [1] [dn] | [90] KB/s [dn] |
 
-[*] = checkbox
+[ ] = checkbox
+
 [up] = 'menu-sort-up' icon
+
 [dn] = 'menu-sort-down' icon
 
 ### Feature wishlist
