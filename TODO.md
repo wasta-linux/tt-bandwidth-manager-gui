@@ -12,6 +12,7 @@
 |     | exe: /usr/lib/firefox | [96] KB/s [dn] | [0] KB/s [dn] | [1] [dn] | [90] KB/s [dn] |
 
 > [ ] = checkbox  
+> [##] = user-editable label  
 > [up] = 'menu-sort-up' icon  
 > [dn] = 'menu-sort-down' icon  
 
