@@ -14,4 +14,4 @@ Depends: tt-bandwidth-manager,
  python3-netifaces,
  ${python3:Depends},
  ${misc:Depends}
-Description: Manage bandwidth usage.
+Description: Manage bandwidth usage by app.

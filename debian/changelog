@@ -1,3 +1,9 @@
+tt-bandwidth-manager-gui (0.3.3) focal; urgency=medium
+
+  * Add explicit depends (needed for armbian focal).
+
+ -- Nate Marti <nate_marti@sil.org>  Tue, 17 Nov 2020 17:27:55 +0100
+
 tt-bandwidth-manager-gui (0.3.2) focal; urgency=medium
 
   * Properly handle --version check from commandline.
