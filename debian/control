@@ -8,5 +8,10 @@ Homepage: https://github.com/wasta-linux/tt-bandwidth-manager-gui
 
 Package: tt-bandwidth-manager-gui
 Architecture: all
-Depends: tt-bandwidth-manager, gnome-terminal, ${python3:Depends}, ${misc:Depends}
+Depends: tt-bandwidth-manager,
+ gnome-terminal,
+ nethogs,
+ python3-netifaces,
+ ${python3:Depends},
+ ${misc:Depends}
 Description: Manage bandwidth usage.
