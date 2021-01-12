@@ -117,10 +117,7 @@ class TrafficCop(Gtk.Application):
                     first_line = f.readline().strip().decode()
             # 2nd term in 1st line of changelog; also need to remove parentheses.
             version = first_line.split()[1][1:-1]
-            #print("Traffic Cop\t\t\t(app)")
-            #print("tt-bandwidth-manager-gui\t(package)")
-            #print(version)
-            print("Traffic Cop (app) / tt-bandwidth-manager-gui (package): {}".format(version))
+            print(f"Traffic Cop (app) / tt-bandwidth-manager-gui (package): {version}")
             exit(0)
 
     def do_activate(self):
@@ -164,6 +161,36 @@ class TrafficCop(Gtk.Application):
             "--no-pager",
         ]
         status_output = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if status_output.returncode != 0:
+            # Status output error. Probably due to kernel incompatibility after update.
+            #   Fall back to trying "systemctl status" command instead.
+            self.unit_file_state = 'unknown'
+            self.active_state = 'unknown'
+            self.svc_start_time = 'unknown'
+            cmd = [
+                "systemctl",
+                "status",
+                "tt-bandwidth-manager.service",
+                "--no-pager",
+            ]
+            status_output = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output_list = status_output.stdout.decode().splitlines()
+            #print(output_list)
+            upat = '\s+Loaded: loaded \(/etc/systemd/system/tt-bandwidth-manager.service; (.*);.*'
+            apat = '\s+Active: (.*) since .*'
+            for line in output_list:
+                try:
+                    match = re.match(upat, line)
+                    self.unit_file_state = match.group(1)
+                except:
+                    pass
+                try:
+                    match = re.match(apat, line)
+                    self.active_state = match.group(1).split()[0]
+                except:
+                    pass
+
+        # Continue with processing of "systemctl show" command output.
         output_list = status_output.stdout.decode().splitlines()
 
         # Parse output for unit state and active state.

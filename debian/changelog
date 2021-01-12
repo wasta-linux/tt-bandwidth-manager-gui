@@ -1,3 +1,9 @@
+tt-bandwidth-manager-gui (0.3.4) focal; urgency=medium
+
+  * Fix missing variables when 'systemctl show' command returns an error.
+
+ -- Nate Marti <nate_marti@sil.org>  Tue, 12 Jan 2021 12:46:08 +0100
+
 tt-bandwidth-manager-gui (0.3.3) focal; urgency=medium
 
   * Add explicit depends (needed for armbian focal).
