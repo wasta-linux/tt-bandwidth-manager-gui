@@ -28,17 +28,19 @@ def handle_button_log_clicked():
         "--no-pager",
         "--since=\'" + app.app.svc_start_time + "\'",
     ]
+    if app.app.svc_start_time == 'unknown':
+        # Likely due to a kernel/systemd incompatibility.
+        cmd.pop() # to remove the "--since" option
     cmd_txt = " ".join(cmd)
-    subprocess.run(cmd_txt, shell=True)
+    result = subprocess.run(cmd_txt, shell=True)
+    print(f"{cmd} -> {result.returncode}")
     return
 
 def handle_button_config_clicked():
     # Open config file in gedit.
-    subprocess.run(
-        ["gedit", "/etc/tt-config.yaml"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
+    cmd = ["gedit", "/etc/tt-config.yaml"]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    utils.print_result(cmd, result)
 
 def handle_config_changed():
     pass

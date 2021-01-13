@@ -21,6 +21,9 @@ def mute(func, *args, **kwargs):
             output = func(*args, **kwargs)
     return output
 
+def print_result(cmd, result):
+    print(f"'{' '.join(cmd)}' -> {result.returncode}")
+
 def get_net_device():
     '''
     Return the gateway internet device.

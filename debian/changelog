@@ -1,3 +1,10 @@
+tt-bandwidth-manager-gui (0.3.5) focal; urgency=medium
+
+  * Fix missing timestamp when 'systemctl show' returns an error.
+  * Show return codes for subprocess commands.
+
+ -- Nate Marti <nate_marti@sil.org>  Wed, 13 Jan 2021 14:58:14 +0100
+
 tt-bandwidth-manager-gui (0.3.4) focal; urgency=medium
 
   * Fix missing variables when 'systemctl show' command returns an error.

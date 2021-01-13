@@ -161,19 +161,17 @@ class TrafficCop(Gtk.Application):
             "--no-pager",
         ]
         status_output = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        utils.print_result(cmd, status_output)
         if status_output.returncode != 0:
             # Status output error. Probably due to kernel incompatibility after update.
             #   Fall back to trying "systemctl status" command instead.
             self.unit_file_state = 'unknown'
             self.active_state = 'unknown'
             self.svc_start_time = 'unknown'
-            cmd = [
-                "systemctl",
-                "status",
-                "tt-bandwidth-manager.service",
-                "--no-pager",
-            ]
+            cmd.pop(1)
+            cmd.insert(1, "status")
             status_output = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            utils.print_result(cmd, status_output)
             output_list = status_output.stdout.decode().splitlines()
             #print(output_list)
             upat = '\s+Loaded: loaded \(/etc/systemd/system/tt-bandwidth-manager.service; (.*);.*'
@@ -296,19 +294,22 @@ class TrafficCop(Gtk.Application):
 
     def stop_service(self):
         cmd = ["systemctl", "stop", "tt-bandwidth-manager.service"]
-        subprocess.run(cmd)
+        result = subprocess.run(cmd)
+        utils.print_result(cmd, result)
         self.update_info_widgets()
 
     def start_service(self):
         cmd = ["systemctl", "start", "tt-bandwidth-manager.service"]
-        subprocess.run(cmd)
+        result = subprocess.run(cmd)
+        utils.print_result(cmd, result)
         self.tt_pid, self.tt_start, self.tt_dev = utils.wait_for_tt_start()
         self.update_info_widgets()
         self.treeview_config = self.update_treeview_config()
 
     def restart_service(self):
         cmd = ["systemctl", "restart", "tt-bandwidth-manager.service"]
-        subprocess.run(cmd)
+        result = subprocess.run(cmd)
+        utils.print_result(cmd, result)
         self.tt_pid, self.tt_start, self.tt_dev = utils.wait_for_tt_start()
         # Check service status and update widgets.
         self.update_info_widgets()
