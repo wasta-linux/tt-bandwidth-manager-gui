@@ -87,7 +87,6 @@ class TrafficCop(Gtk.Application):
         self.vp_config.add(self.treeview_config)
 
         # Populate widget data.
-        self.update_info_widgets()
         self.button_apply.set_sensitive(False)
 
         # Connect GUI signals to Handler class.
@@ -130,7 +129,8 @@ class TrafficCop(Gtk.Application):
             subprocess.run(self.args)
             exit()
 
-        # Show window.
+        # Update widgets and show window.
+        self.update_info_widgets()
         self.window.show()
 
         # Start tracking operations (self.window must be shown first).
