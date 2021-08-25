@@ -19,7 +19,6 @@ def handle_button_log_clicked():
     # Follow the log since service start time in a terminal window.
     cmd = [
         "gnome-terminal",
-        "--geometry=144x24+100+200",
         "--",
         "journalctl",
         "--unit=tt-bandwidth-manager.service",
